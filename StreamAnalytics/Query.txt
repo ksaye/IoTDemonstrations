@@ -1,0 +1,35 @@
+SELECT                                                /* Cold Path, store to Blob for Machine Learning of doorStatus */
+    DATEPART(minute, System.TimeStamp) as minute,
+    DATEPART(hour, System.TimeStamp) as hour,
+    DATENAME(weekday, System.TimeStamp) as day,
+    DATENAME(month, System.TimeStamp) as month,
+    DATENAME(year, System.TimeStamp) as year,
+    iothub.iothub.connectiondeviceid as deviceName,
+    MAC as macAddress, doorStatus, UpTimeMS
+INTO Blob 
+FROM IotHub 
+WHERE IotHub.doorStatus = 0 OR IotHub.doorStatus = 1
+
+SELECT                                                /* send to EventHub monitored by the takePicture Azure Function */ 
+    DATEPART(minute, System.TimeStamp) as minute,
+    DATEPART(hour, System.TimeStamp) as hour,
+    DATENAME(weekday, System.TimeStamp) as day,
+    DATENAME(month, System.TimeStamp) as month,
+    DATENAME(year, System.TimeStamp) as year,
+    iothub.iothub.connectiondeviceid as deviceName,
+    MAC as macaddress, doorStatus, UpTimeMS
+INTO takePicture 
+FROM IoTHub
+where IoTHub.doorStatus = 1 
+
+SELECT                                                /* send to EventHub monitored by the verifyPicture Azure Function */
+    'verifyPicture()' as action,
+    scoredProbabilities,
+    deviceName as fromDeviceName,
+    macaddress as frommacaddress,
+    CONCAT('https://austioniotfiles.blob.core.windows.net/uploads/', iothub.iothub.connectiondeviceid, '/', IoTHub.pictureName) as URL,
+    iothub.iothub.connectiondeviceid as deviceName,
+    System.TimeStamp as date
+INTO pictureUpload 
+FROM IoTHub 
+WHERE IoTHub.event = 'pictureUpload()'
