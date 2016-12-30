@@ -1,0 +1,11 @@
+{
+  "bindings": [
+    {
+      "type": "eventHubTrigger",
+      "name": "myEventHubMessage",
+      "direction": "in",
+      "path": "pictureupload",
+      "connection": "pictureupload"
+    }
+  ]
+}
