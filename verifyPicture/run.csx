@@ -21,11 +21,11 @@ using System.Collections;
 */
 const string CognitiveFaceURL = "https://api.projectoxford.ai/face/v1.0/detect?returnFaceId=true&returnFaceLandmarks=false&returnFaceAttributes=age,gender,glasses";
 const string CognitiveIdentifyURL = "https://api.projectoxford.ai/face/v1.0/identify";
-const string CognitiveKey = "874e88a83e3d495a84c2607ef562748d";
-const string TwilioAccountSid = "ACc34dfa06fa69076bd9648c5eed6ed5dd"; 
-const string TwilioAuthToken = "4cb6d1b7b7b175a49f78187d494c1e9e";
-const string fromPhoneNumber = "+14692034672";
-const string toPhoneNumber= "+12147707381";
+const string CognitiveKey = "874eREMOVED748d";
+const string TwilioAccountSid = "ACREMOVEDed5dd"; 
+const string TwilioAuthToken = "4cREMOVED1e9e";
+const string fromPhoneNumber = "+14REMOVED72";
+const string toPhoneNumber= "+12REMOVED81";
 const float identifyConfidence = (float).75;
 
 public static async Task Run(string myEventHubMessage, TraceWriter log)
