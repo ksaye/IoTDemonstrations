@@ -2,7 +2,8 @@
   "frameworks": {
     "net46": {
       "dependencies": {
-        "Twilio": "5.0.0-rca2"
+        "Twilio": "5.0.0-rca2",
+        "WindowsAzure.Storage": "8.0.0"
       }
     }
   }
