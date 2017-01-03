@@ -92,7 +92,7 @@ void checkDoor() {
     json += deviceName;
     json += "', UpTimeMS: ";
     json += millis();
-    json += "' }";
+    json += " }";
 
     String publishstring = "devices/";
     publishstring += deviceName;
