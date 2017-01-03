@@ -92,7 +92,9 @@ void checkDoor() {
     json += deviceName;
     json += "', UpTimeMS: ";
     json += millis();
-    json += " }";
+    json += ", MAC: \"";
+    json += WiFi.macAddress();
+    json += "\" }";
 
     String publishstring = "devices/";
     publishstring += deviceName;
