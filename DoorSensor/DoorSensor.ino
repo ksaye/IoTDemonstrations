@@ -16,7 +16,7 @@ PubSubClient client(espClient);
 
 String SASToken = "HostName=AustinIoT.azure-devices.net;DeviceId=FrontDoor;SharedAccessSignature=SharedAccessSignature sr=AustinIoT.azure-devices.net%2fdevices%2fFrontDoor&sig=23hrwREMOVED%3d&se=1513273225";
 const char* SSID = "saye.org";
-const char* PSK = "123windows";
+const char* PSK = "REMOVEDws";
 
 int DoorPin = D1;    // What PIN to connect the Door sensor.  Other wire goes to ao GND
 int DoorStatus;
