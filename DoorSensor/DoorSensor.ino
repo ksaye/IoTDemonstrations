@@ -1,3 +1,5 @@
+#include <rBase64.h>
+#include <ESP8266HTTPClient.h>
 #include <WiFiUdp.h>
 #include <WiFiServer.h>
 #include <WiFiClientSecure.h>
@@ -13,17 +15,18 @@
 
 WiFiClientSecure espClient;
 PubSubClient client(espClient);
+HTTPClient http;
 
-String SASToken = "HostName=AustinIoT.azure-devices.net;DeviceId=FrontDoor;SharedAccessSignature=SharedAccessSignature sr=AustinIoT.azure-devices.net%2fdevices%2fFrontDoor&sig=23hrwREMOVED%3d&se=1513273225";
+
 const char* SSID = "saye.org";
-const char* PSK = "REMOVEDws";
+const char* PSK = "1REOVEDs";
 
 int DoorPin = D1;    // What PIN to connect the Door sensor.  Other wire goes to ao GND
 int DoorStatus;
 
-String deviceName =  mySubString(SASToken, "DeviceId=", ";SharedAccessSignature=");
-String serverName = mySubString(SASToken, "HostName=", ";DeviceId=");
-String password = SASToken.substring(SASToken.indexOf("SharedAccessSignature sr"));
+String deviceName = "FrontDoor";
+String Key =    "r7/REMOVEDlGA=";
+String serverName = "January2017.azure-devices.net";
 
 long startTime;
 long postingInterval = 1000 * 60 * 1;
@@ -44,6 +47,31 @@ void loop()
   connectToIoTHub();
   client.loop();
   checkDoor();
+}
+
+String getSAS() {
+  String URL = "http://january2017.azurewebsites.net/api/generateSAS?deviceId=";
+  URL += deviceName;
+  URL += "&iotHub=";
+  URL += serverName;
+  URL += "&key=";
+  URL += rbase64.encode(Key);
+  http.begin(URL);
+  log(URL);
+  int httpCode = http.GET();
+  String mySAS = ".";
+
+  if (httpCode == HTTP_CODE_OK) {
+    mySAS = http.getString();
+    mySAS = mySAS.substring(1, mySAS.length() - 1);  // removing the leading and trailing quotes
+  }
+  else {
+    Serial.print("Error getting SAS: ");
+    Serial.println(httpCode);
+    mySAS = "Error getting SASToken.";
+  }
+
+  return mySAS;
 }
 
 void connectToWiFi() {
@@ -72,7 +100,7 @@ void connectToIoTHub() {
     userName += deviceName;
     log(userName);
 
-    client.connect(deviceName.c_str(), userName.c_str(), password.c_str());
+    client.connect(deviceName.c_str(), userName.c_str(), getSAS().c_str());
     if (client.connected()) {
       String subscribestring = "devices/";
       subscribestring += deviceName;
@@ -109,7 +137,7 @@ void checkDoor() {
 
 void log(String data) {
   Serial.println(data);
- }
+}
 
 String mySubString(String fullString, String start, String end) {
   int lenOfStart = start.length();
