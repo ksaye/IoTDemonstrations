@@ -29,12 +29,12 @@ String deviceName     = "your iot device Name";        // Example: myDevice
 String Key            = "your key";                    // Example: ErNBy4a6NQL/3lBfcd+UwuOcIwfDURlIaDkacWcYhWA=
 String serverName     = "your Azure IoT Hub Name";     // Example: kevinsayIoT.azure-devices.net
 String SASGenerator   = "your SAS generagor";          // URL to generate the SAS token.  Example: http://january2017.azurewebsites.net/api/generateSAS?deviceId=
-float callibration    = 92.75;                         // default value for callibration
-float callibrationchg = .025;                          // for each callibration cycle, how much to move the callibration
-float callibrationmtc = .05;                           // how close the callibration should get in "callibrationCount" cycles
+float calibrateion    = 92.75;                         // default value for calibrateion
+float calibrateionchg = .025;                          // for each calibrateion cycle, how much to move the calibrateion
+float calibrateionmtc = .05;                           // how close the calibrateion should get in "calibrateionCount" cycles
 float minimumReading  = 2;                             // if less than 2 amps, we don't care.  sensors are not exact
 float sketchVersion   = 1.0;                           // just a version of this sketch.   Used for when you OTA and to ensure the correct version is running
-String configFileName = "/config.txt";                 // a config file that we store the callibrated value
+String configFileName = "/config.txt";                 // a config file that we store the calibrateed value
 int loopCounter       = 1;                             // a loop counter for sampling current
 int samplesPerMsg     = 30;                            // how many samples before we send an IoT message there is a half second delay, so for a 1 minute sample set to 30
 float ampAverage;                                      // used to hold the weighted average of the samples
@@ -114,16 +114,16 @@ void sendMessage(String keyName, float keyValue) {
     client.publish(publishstring.c_str(), json.c_str());
 }
 
-void callibrate(String callibrateTo) {
-  float target = callibrateTo.toFloat();
+void calibrate(String calibrateTo) {
+  float target = calibrateTo.toFloat();
   int mycounter = 1;
-  float currentCallibration = callibration;                                 // where we start from
+  float currentCalibrateion = calibrateion;                                 // where we start from
   double Irms;
-  log("in callibrate()");
+  log("in calibrate()");
   bool complete = false;
   
   while (complete == false) {
-    emon1.current(A0, currentCallibration);                                   // change the currentCallibration
+    emon1.current(A0, currentCalibrateion);                                   // change the currentCalibrateion
     for (int i=0; i <= 6; i++){                                               // We have to read the sensor at least 4 times to get an accurate reading
       Irms = emon1.calcIrms(1480);
       delay(250);
@@ -139,34 +139,34 @@ void callibrate(String callibrateTo) {
 
     if (Irms < minimumReading) {
       complete = true;
-    } else if (Irms >= target - callibrationmtc && Irms <= target + callibrationmtc) {
-      String message = "Callibration Success: Target=";
-      message += callibrateTo;
-      message += " currentCallibration=";
-      message += currentCallibration;
+    } else if (Irms >= target - calibrateionmtc && Irms <= target + calibrateionmtc) {
+      String message = "Calibrateion Success: Target=";
+      message += calibrateTo;
+      message += " currentCalibrateion=";
+      message += currentCalibrateion;
       message += " sensorReading=";
       message += Irms;
-      sendMessage("callibrationStatus", message);
+      sendMessage("calibrateionStatus", message);
       log(message);
       complete = true;
     } else if (Irms < target) {
-      currentCallibration = currentCallibration + callibrationchg;
-      logMessage = "Adding to currentCallibration.  Value is now:";
-      logMessage += currentCallibration;
+      currentCalibrateion = currentCalibrateion + calibrateionchg;
+      logMessage = "Adding to currentCalibrateion.  Value is now:";
+      logMessage += currentCalibrateion;
       log(logMessage);
     } else {
-      currentCallibration = currentCallibration - callibrationchg;
-      logMessage = "Subtracting from currentCallibration.  Value is now:";
-      logMessage += currentCallibration;
+      currentCalibrateion = currentCalibrateion - calibrateionchg;
+      logMessage = "Subtracting from currentCalibrateion.  Value is now:";
+      logMessage += currentCalibrateion;
       log(logMessage);
     }
   }
 
   File configFile = SPIFFS.open(configFileName, "w");
-  configFile.println(currentCallibration);
+  configFile.println(currentCalibrateion);
   
   Serial.print("Wrote value ");
-  Serial.print(currentCallibration);
+  Serial.print(currentCalibrateion);
   Serial.print(" to config file ");
   Serial.println(configFileName);
   configFile.close();
@@ -178,12 +178,12 @@ void callback(char* topic, byte* payload, unsigned int length) {
     message+=(char)payload[i];
   }
 
-  if (message.startsWith("Callibrate:")) {
-    Serial.print("Callibrate to:");
+  if (message.startsWith("Calibrate:")) {
+    Serial.print("Calibrate to:");
     Serial.println(message.substring(11));
-    callibrate(message.substring(11));
-  } else if (message == "getCallibration") {
-    sendMessage("currentCallibration", callibration); 
+    calibrate(message.substring(11));
+  } else if (message == "getCalibrateion") {
+    sendMessage("currentCalibrateion", calibrateion); 
   } else if (message.startsWith("OTA:")){
     // We expect something like "OTA http://www.server.com/mypath/mystuff/binary.bin"
 
@@ -216,15 +216,15 @@ void setup()
 
   if (SPIFFS.exists(configFileName)) {
     File configFile = SPIFFS.open(configFileName, "r");
-    callibration = configFile.parseFloat();
+    calibrateion = configFile.parseFloat();
     Serial.print("Read config file ");
     Serial.print(configFileName);
     Serial.print(" returned value: ");
-    Serial.println(callibration);
+    Serial.println(calibrateion);
     configFile.close();
   }
   
-  emon1.current(A0, callibration);             // for NodeMCU, we only have one ADC
+  emon1.current(A0, calibrateion);             // for NodeMCU, we only have one ADC
 
   WiFi.begin(ssid, password);
   
@@ -245,9 +245,9 @@ void loop()
   client.loop();
   
   if (Serial.available() > 0) {
-    String callibrateTo = Serial.readString();
-    sendMessage("Callibrate", callibrateTo);
-    callibrate(callibrateTo);
+    String calibrateTo = Serial.readString();
+    sendMessage("Calibrate", calibrateTo);
+    calibrate(calibrateTo);
   }
 
   double Irms = emon1.calcIrms(1480);  // Calculate Irms only
