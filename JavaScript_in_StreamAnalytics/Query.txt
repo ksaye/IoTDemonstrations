@@ -1,0 +1,23 @@
+WITH parseZenseio AS (  
+  SELECT EUI, SeqNo, TxTime, udf.parseZenseio(PDU) as payload from iot  
+  where PDU is not null
+)  
+
+select
+    EUI as deviceName,
+    SeqNo as SequenceNumber,
+    TxTime as TransmitTime,
+    payload.opcode as opcode,
+    payload.data.temperature as temperature, 
+    payload.data.humidity as humidity,
+    payload.data.pressure as pressure,
+    payload.data.lux as lux,
+    payload.data.noise as noise,
+    payload.data.X as X,
+    payload.data.Y as Y,
+    payload.data.Z as Z,
+    payload.data.lat as lat,
+    payload.data.lng as lng,
+    payload.data.alt as alt
+into blob 
+from parseZenseio
