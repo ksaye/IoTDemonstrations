@@ -1,0 +1,9 @@
+{
+  "frameworks": {
+    "net46": {
+      "dependencies": {
+        "Microsoft.Azure.Devices.Client": "1.1.4"
+      }
+    }
+  }
+}
