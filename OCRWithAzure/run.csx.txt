@@ -1,0 +1,29 @@
+using System.Net;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Blob;
+
+const string BlobConnectionString = "DefaultEndpointsProtocol=https;AccountName=YOURAzureStorageAccount;AccountKey=v7bOBP8XREMOVEDnT9ylmwg==";
+
+public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, TraceWriter log)
+{
+    //log.Info("C# HTTP trigger function processed a request.");
+    // Get request body
+    String data = req.Content.ReadAsStringAsync().Result;
+    // Set name to query string or body data
+    log.Info(data);
+    ChangeContentType(data);
+    return req.CreateResponse(HttpStatusCode.OK, "Complete");
+}
+
+public static void ChangeContentType(string URI)
+
+{
+    //Parse the connection string for the storage account.
+    CloudStorageAccount storageAccount = CloudStorageAccount.Parse(BlobConnectionString);
+    //Create the service client object for credentialed access to the Blob service.
+    CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
+
+    ICloudBlob imageFile = blobClient.GetBlobReferenceFromServer(new Uri(URI));
+    imageFile.Properties.ContentType = "image/jpeg";
+    imageFile.SetProperties();
+}
