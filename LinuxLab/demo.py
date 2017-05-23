@@ -5,10 +5,9 @@ import random
 import iothub_client
 import json
 from iothub_client import *
-from datetime import datetime
 
 message_timeout = 1000
-receive_context = 0
+messageId = 0
 
 protocol = IoTHubTransportProvider.AMQP
 connection_string = "{insert connection string here}"
@@ -20,19 +19,20 @@ def receive_message_callback(message, counter):
     print("Message received: %s" % message)
     return IoTHubMessageDispositionResult.ACCEPTED
 
-def send_confirmation_callback(message, result, pictureName):
-#   print("Confirmation[%s] received for message with result = %s" % (pictureName, result))
-    dummyvar = ''
+def send_confirmation_callback(message, result, user_context):
+   print("Confirmation[%s] received for message with result = %s" % (user_context, result))
 
 def iothub_client_init():
     iotHubClient = IoTHubClient(connection_string, protocol)
     iotHubClient.set_option("messageTimeout", message_timeout)
-    iotHubClient.set_message_callback(receive_message_callback, receive_context)
+    iotHubClient.set_message_callback(receive_message_callback, 0)
     return iotHubClient
 
 def sendMessage(message):
+    global messageId
+    messageId = messageId + 1	
     messageToSend = IoTHubMessage(bytearray(message.encode('utf8')))
-    iotHubClient.send_event_async(messageToSend, send_confirmation_callback, 0)
+    iotHubClient.send_event_async(messageToSend, send_confirmation_callback, messageId)
    
 try:
     iotHubClient = iothub_client_init()
@@ -40,8 +40,8 @@ try:
     while True:
         time.sleep(5)
         mytemp = random.randint(25, 29)
-        message = {'temperature': mytemp}
-        sendMessage(message)
+        JSONmessage = {'temperature': mytemp}
+        sendMessage(json.dumps(JSONmessage))
 
 except IoTHubError as e:
     print("Unexpected error %s from IoTHub" % e)
