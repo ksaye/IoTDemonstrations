@@ -17,7 +17,7 @@ using Microsoft.WindowsAzure.Storage.Blob;
 // For the Lab, modify the following 3 lines
 const string IoTConnectionString    = "HostName=Johannesburg.azure-devices.net;SharedAccessKeyName=deviceExplorer;SharedAccessKey=fPuPREMOVEDjFAO6m2KXLQ=";
 const string BlobConnectionString   = "DefaultEndpointsProtocol=https;AccountName=kevinsayiot;AccountKey=MjKh6y3QDM8tPCi8PwjYREMOVEDm9iwl9ZJKsinqxNbEPzg==;EndpointSuffix=core.windows.net";
-const string JohannesburgKey        = "40c1REMOVED978e13";
+const string JohannesburgKey        = "40c1REMOVEDi978e13";
 
 const string DocumentDBURI          = "https://johannesburg.documents.azure.com:443/";
 const string DocumentDBKEY          = "iujkEZ3NiS7lBoWREMOVEDLitB4AIWFw94uPHYfhhw==";
@@ -102,6 +102,10 @@ public static Stream getStream(string fileURL)
 
 public static async Task<bool> verifyPerson (string pictureURL)
 {
+    // they Blob uploads do not have a content type 
+    
+    ChangeContentType(pictureURL);
+
     StringContent body = new StringContent("{\"url\":\"" + pictureURL + "\"}", System.Text.Encoding.UTF8, "application/json");
 
     HttpClient httpClient = new HttpClient();
@@ -126,6 +130,30 @@ public static async Task<bool> verifyPerson (string pictureURL)
         Console.WriteLine("verifyPerson=Null faceId");
         return false;
     }
+}
+
+public static void ChangeContentType(string URI)
+
+{
+    
+	//Parse the connection string for the storage account.
+    
+	CloudStorageAccount storageAccount = CloudStorageAccount.Parse(BlobConnectionString);
+
+    
+
+	//Create the service client object for credentialed access to the Blob service.
+    
+	CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
+
+    
+
+	ICloudBlob imageFile = blobClient.GetBlobReferenceFromServer(new Uri(URI));
+    
+	imageFile.Properties.ContentType = "image/jpeg";
+    
+	imageFile.SetProperties();
+
 }
 
 public static async Task<bool> personMatch(string faceID, string targetGroup, double probability)
