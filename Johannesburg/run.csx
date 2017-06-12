@@ -122,7 +122,6 @@ public static async Task<bool> verifyPerson (string pictureURL)
     if (faceID != null)
     {
         bool match = await personMatch(faceID, targetGroup, .75);
-        personGUID = faceID;
         Console.WriteLine("verifyPerson="+match);
         return match;
     } else
@@ -178,6 +177,7 @@ public static async Task<bool> personMatch(string faceID, string targetGroup, do
     }
     else
     {
+        personGUID = personMatch.candidates[0].personId;
         Console.WriteLine("PersonMatch=True");
         return true;
     }
