@@ -1,4 +1,4 @@
-﻿using System;
+l﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,7 +19,7 @@ namespace IoTLoadDemo
         static string commonKey                 = "GDX4tNsIpZXa3+c8OnMqhI2Vc4ToRu2yUvHU+FK71mw=";
 
         static int deviceCount                  = 1000;     // how many devices we will create and clients we will launch
-        static int maxMessages                  = 20;       // once this count of messages are sent, the cient shuts down
+        static int maxMessages                  = 20;       // once this count of messages are sent, the client shuts down
         static int messageDelaySeconds          = 0;        // how long between each message, honoring IoT Hub Quotas
         static int runningDevices               = 0;
         static bool allDevicesDeleted           = false;
