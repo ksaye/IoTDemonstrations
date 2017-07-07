@@ -1,0 +1,23 @@
+{
+  "name": "iotedgedemonstration",
+  "version": "1.0.0",
+  "description": "MQTT Azure IoT Edge demonstration.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Azure-Samples/iot-edge-samples"
+  },
+  "main": "app.js",
+  "scripts": {
+    "cloud": "node app.js cloud"
+  },
+  "author": "Microsoft Corporation",
+  "license": "MIT",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "azure-iot-gateway": "~1.1.3",
+    "azure-iot-device-amqp": "^1.0.6",
+    "mosca": "^2.5.1",
+    "heap": "^0.2.6"
+  }
+}
