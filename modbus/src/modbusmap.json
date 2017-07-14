@@ -1,0 +1,20 @@
+{
+  "controllerIPAddress": "10.30.15.201",
+  "controllerIPPort": "502",
+  "controllerId": "PilotCoolingTower",
+  "pollingFrequencySeconds": 5,
+  "sensors": [
+    {
+      "tagName": "myHoldingRegister",
+      "firstRegister": 400001,
+      "lastRegister": 400004,
+      "value": 1
+    },
+    {
+      "tagName": "myCoil",
+      "firstRegister": 2,
+      "value": 1
+    }
+  ]
+}
+
