@@ -20,11 +20,13 @@ from obd.protocols import ECU
 from obd.utils import bytes_to_int
 
 speed = 0
+retryCounter = 0
+retryDelay = 60
 messageCounter = int(time.time())
 messageMaxSize = 4096
 messageToSend = []
 protocol = IoTHubTransportProvider.AMQP
-connection_string = "HostName=kevinsaycarpi.azure-devices.net;DeviceId=carPi2;SharedAccessKey=YJFREMOVEDbc="
+connection_string = "HostName=kevinsaycarpi.azure-devices.net;DeviceId=carPi;SharedAccessKey=MzREMOVEDw="
 sequence = 0
 dataDirectory = '/opt/carPi/data'
 timeHasBeenSet = True
@@ -53,7 +55,8 @@ def iothub_client_init():
 
 def processOldMessages():
     for filename in os.listdir(dataDirectory):
-        resendMessage(filename)
+        if filename != messageCounter:
+            resendMessage(filename)
 
 def confirmation_callback(message, result, user_context):
     global dataDirectory
@@ -67,19 +70,23 @@ def sendMessage():
     global messageCounter, dataDirectory, messageToSend, iotHubClient, timeHasBeenSet
     if timeHasBeenSet:
         file = open(dataDirectory + '/' + str(messageCounter))
-        message = file.read()
+        message = json.dumps(file.read().splitlines())
+        message = message.replace('"', '')
+        message = message.replace('\'', '"')
         messageToSend = IoTHubMessage(bytearray(gZipString(message.encode('utf8'))))
         iotHubClient.send_event_async(messageToSend, confirmation_callback, messageCounter)
         messageCounter += 1
         messageToSend = []      # empty out the messageToSend object
 
-def resendMessage(messageCounter):
+def resendMessage(fileName):
     global dataDirectory, iotHubClient
-    print("Resending message [%s]" % (messageCounter))
-    file = open(dataDirectory + '/' + str(messageCounter))
-    message = file.read()
+    print("Resending message [%s]" % (fileName))
+    file = open(dataDirectory + '/' + str(fileName))
+    message = json.dumps(file.read().splitlines())
+    message = message.replace('"', '')
+    message = message.replace('\'', '"')
     messageToSend = IoTHubMessage(bytearray(gZipString(message.encode('utf8'))))
-    iotHubClient.send_event_async(messageToSend, confirmation_callback, messageCounter)
+    iotHubClient.send_event_async(messageToSend, confirmation_callback, fileName)
 
 def gZipString(stringtoZip):
     out = StringIO.StringIO()
@@ -90,7 +97,7 @@ def gZipString(stringtoZip):
 def addMessage(message):
     global messageToSend, messageCounter, dataDirectory
     file = open(dataDirectory + '/' + str(messageCounter), 'a')
-    file.write(message)
+    file.write(message + '\r\n')
     file.close()
     messageToSend.append(message)       # still need the messageToSend object so we can understand the compressed size
 
@@ -121,7 +128,7 @@ def addVehicleInfo():
           except:
             print("for command in allCommands: Error: " + str(sys.exc_info()[0]))
     
-        print message
+        #print message
         addMessage(str(message))
     except:
         print("addVehicleInfo() Error: " + str(sys.exc_info()[0]))
@@ -135,9 +142,11 @@ while True:
                 iotHubClient = iothub_client_init()
     
             if len(os.listdir(dataDirectory)) > 2:
-                if (str(os.system('ifconfig | grep wlan | grep UP')) == '0') or (str(os.system('ifconfig | grep eth | grep UP')) == '0'):
-                    if str(os.system('ping -c1 www.msn.com ')) == '0':
-                        processOldMessages()
+                if (retryCounter == 0) or (sequence > (retryCounter + retryDelay )):
+                    if (str(os.system('ifconfig | grep wlan | grep UP')) == '0') or (str(os.system('ifconfig | grep eth | grep UP')) == '0'):
+                        if str(os.system('ping -c1 www.msn.com ')) == '0':
+                            retryCounter = sequence + 1
+                            processOldMessages()
     
             messageSize = len(gZipString(''.join(str(e) for e in messageToSend)))
             if messageSize > (messageMaxSize * .98):     # making sure we maximize the packet size, unless traveling fast
@@ -174,7 +183,7 @@ while True:
     
             if sentence.find('GGA') > 0:
                 gpsdata = pynmea2.parse(sentence)
-                print(gpsdata)
+                #print(gpsdata)
                 if (gpsdata.num_sats > 4):
                     message = {'type': 'location',
                                 'lat': float(gpsdata.latitude), 
