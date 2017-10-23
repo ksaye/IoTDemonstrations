@@ -18,7 +18,7 @@ from sets import Set
 from obd import OBDCommand, Unit, protocols
 from obd.protocols import ECU
 from obd.utils import bytes_to_int
-
+#
 speed = 0
 retryCounter = 0
 retryDelay = 60
@@ -70,9 +70,10 @@ def sendMessage():
     global messageCounter, dataDirectory, messageToSend, iotHubClient, timeHasBeenSet
     if timeHasBeenSet:
         file = open(dataDirectory + '/' + str(messageCounter))
-        message = json.dumps(file.read().splitlines())
-        message = message.replace('"', '')
-        message = message.replace('\'', '"')
+        #message = json.dumps(file.read().splitlines())
+        #message = message.replace('"', '')
+        #message = message.replace('\'', '"')
+        message = file.read()
         messageToSend = IoTHubMessage(bytearray(gZipString(message.encode('utf8'))))
         iotHubClient.send_event_async(messageToSend, confirmation_callback, messageCounter)
         messageCounter += 1
