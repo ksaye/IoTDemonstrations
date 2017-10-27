@@ -18,18 +18,20 @@ from sets import Set
 from obd import OBDCommand, Unit, protocols
 from obd.protocols import ECU
 from obd.utils import bytes_to_int
-#
+
+# modified the retry to skip the current working file
+
 speed = 0
 retryCounter = 0
-retryDelay = 60
+retryDelay = 1000
 messageCounter = int(time.time())
 messageMaxSize = 4096
 messageToSend = []
 protocol = IoTHubTransportProvider.AMQP
-connection_string = "HostName=kevinsaycarpi.azure-devices.net;DeviceId=carPi;SharedAccessKey=MzREMOVEDw="
+connection_string = os.popen('cat connectionString.txt').read()
 sequence = 0
 dataDirectory = '/opt/carPi/data'
-timeHasBeenSet = True
+timeHasBeenSet = False
 
 # create the directory if it does note exist
 if not os.path.exists(dataDirectory):
@@ -70,14 +72,13 @@ def sendMessage():
     global messageCounter, dataDirectory, messageToSend, iotHubClient, timeHasBeenSet
     if timeHasBeenSet:
         file = open(dataDirectory + '/' + str(messageCounter))
-        #message = json.dumps(file.read().splitlines())
-        #message = message.replace('"', '')
-        #message = message.replace('\'', '"')
         message = file.read()
         messageToSend = IoTHubMessage(bytearray(gZipString(message.encode('utf8'))))
         iotHubClient.send_event_async(messageToSend, confirmation_callback, messageCounter)
         messageCounter += 1
         messageToSend = []      # empty out the messageToSend object
+        #file = open(str(messageCounter) + ".processed", 'a')
+        #file.write(message)
 
 def resendMessage(fileName):
     global dataDirectory, iotHubClient
@@ -94,6 +95,7 @@ def gZipString(stringtoZip):
     with gzip.GzipFile(fileobj=out, mode="w") as f:
         f.write(stringtoZip)
     return out.getvalue()
+    #return stringtoZip
 
 def addMessage(message):
     global messageToSend, messageCounter, dataDirectory
@@ -134,8 +136,15 @@ def addVehicleInfo():
     except:
         print("addVehicleInfo() Error: " + str(sys.exc_info()[0]))
 
+def initializeGPS():
+    # on Linux, using the standard ttyACM driver, we do not get GxZDA (time) messages
+    # the default u-blox driver for Windows adds the following command.  We just have to send it on Linux
+    initializeArray = bytearray([0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x08, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x08, 0x5E])
+    serialStream.write(initializeArray);
+
 bootTime = str(datetime.now().isoformat())
 iotHubClient = iothub_client_init()
+initializeGPS()
 
 while True:
         try:
@@ -144,7 +153,7 @@ while True:
     
             if len(os.listdir(dataDirectory)) > 2:
                 if (retryCounter == 0) or (sequence > (retryCounter + retryDelay )):
-                    if (str(os.system('ifconfig | grep wlan | grep UP')) == '0') or (str(os.system('ifconfig | grep eth | grep UP')) == '0'):
+                    if str(os.system('iw wlan0 link | grep Connected')) == '0':
                         if str(os.system('ping -c1 www.msn.com ')) == '0':
                             retryCounter = sequence + 1
                             processOldMessages()
@@ -157,7 +166,7 @@ while True:
                 
             sentence = serialStream.readline()
     
-            if sentence.find('VTG') > 0:
+            if (sentence.find('VTG') > 0) and (timeHasBeenSet):
                 speed = sentence.split(',')
                 if len(speed[7]) > 0:
                     speed = float(speed[7]) * .62137
@@ -175,30 +184,36 @@ while True:
                 formattedTime = ("%s-%s-%s %s:%s:%s UTC") % (month, day, year, utcHour, utcMin, utcSec)
                 fullGPSDate = datetime.strptime(formattedTime, '%m-%d-%Y %H:%M:%S %Z')
     
-                # if we are over a second off in time, we set the date
-                if (fullGPSDate - datetime.utcnow()) > timedelta(seconds=1):
+                # if we are over a second off in time, we set the date/time only on Linux
+                if ((fullGPSDate - datetime.utcnow()) > timedelta(seconds=1)) and (os.name != 'nt'):
                     formattedNewDateTime = fullGPSDate.strftime('%d %b %Y %H:%M:%S UTC')
                     print("setting clock to: " + str(formattedNewDateTime))
                     #os.system('sudo date -s "' + formattedNewDateTime + '"')
                 timeHasBeenSet = True
     
-            if sentence.find('GGA') > 0:
-                gpsdata = pynmea2.parse(sentence)
-                #print(gpsdata)
-                if (gpsdata.num_sats > 4):
-                    message = {'type': 'location',
-                                'lat': float(gpsdata.latitude), 
-                                'lon': float(gpsdata.longitude), 
-                                'alt': float(gpsdata.altitude), 
-                                'sats': int(gpsdata.num_sats), 
-                                'speed': int(speed), 
-                                'currentTime': str(datetime.now().isoformat()), 
-                                'bootTime': bootTime, 
-                                'sequence': sequence}
-                    #print(message)
-                    addMessage(str(message))
-                    sequence = sequence + 1
-    
+            if (sentence.find('GGA') > 0) and (timeHasBeenSet):
+                sequence = sequence + 1
+                try:
+                    gpsdata = pynmea2.parse(sentence)
+                    if (gpsdata.num_sats > 4):
+                        message = {'type': 'location',
+                                    'lat': float(gpsdata.latitude), 
+                                    'lon': float(gpsdata.longitude), 
+                                    'alt': float(gpsdata.altitude), 
+                                    'sats': int(gpsdata.num_sats), 
+                                    'speed': int(speed), 
+                                    'currentTime': str(datetime.now().isoformat()), 
+                                    'bootTime': bootTime, 
+                                    'sequence': sequence}
+                        #print(message)
+                        addMessage(str(message))
+                except:
+                      message = {'type': 'location',
+                        'currentTime': str(datetime.now().isoformat()), 
+                        'bootTime': bootTime, 
+                        'sequence': sequence}
+                      addMessage(str(message))
+                      print("Unknown Error in GGA: " + str(sys.exc_info()[0]))
+                    
         except:
                 print("Unknown Error in Main Try: " + str(sys.exc_info()[0]))
-
