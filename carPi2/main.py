@@ -155,6 +155,8 @@ while True:
                 if (retryCounter == 0) or (sequence > (retryCounter + retryDelay )):
                     if str(os.system('iw wlan0 link | grep Connected')) == '0':
                         if str(os.system('ping -c1 www.msn.com ')) == '0':
+                            iotHubClient = None
+                            iotHubClient = iothub_client_init()
                             retryCounter = sequence + 1
                             processOldMessages()
     
