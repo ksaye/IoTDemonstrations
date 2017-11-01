@@ -84,9 +84,7 @@ def resendMessage(fileName):
     global dataDirectory, iotHubClient
     print("Resending message [%s]" % (fileName))
     file = open(dataDirectory + '/' + str(fileName))
-    message = json.dumps(file.read().splitlines())
-    message = message.replace('"', '')
-    message = message.replace('\'', '"')
+    message = file.read()
     messageToSend = IoTHubMessage(bytearray(gZipString(message.encode('utf8'))))
     iotHubClient.send_event_async(messageToSend, confirmation_callback, fileName)
 
