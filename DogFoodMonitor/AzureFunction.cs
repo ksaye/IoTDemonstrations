@@ -1,22 +1,13 @@
 #r "Microsoft.WindowsAzure.Storage"
 
-
 using System;
 using System.Text;
-
 using Newtonsoft.Json.Linq;
-
 using Microsoft.Azure.Devices;
-
 using Microsoft.WindowsAzure.Storage;
-
 using Microsoft.WindowsAzure.Storage.Table;
-
 using System.Collections.Generic;
-
 using System.Linq;
-
-
 
 const string connectionString = "DefaultEndpointsProtocol=https;AccountName=kevinsayiot;AccountKey=MjKREMOVEDEPzg==;EndpointSuffix=core.windows.net";
 static CloudStorageAccount storageAccount = CloudStorageAccount.Parse(connectionString);
