@@ -1,0 +1,5 @@
+﻿{
+  "tivo": "TIVO-65200018047DC33",
+  "connectionString": "HostName=kevinsayIoT.azure-devices.net;DeviceId=TivoControl;SharedAccessKey=npPHMYKEYREMOVEDQC8bY=",
+  "logFile": "logfile.txt"
+}
