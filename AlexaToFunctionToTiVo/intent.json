@@ -1,0 +1,136 @@
+﻿{
+  "languageModel": {
+    "intents": [
+      {
+        "name": "AMAZON.CancelIntent",
+        "samples": []
+      },
+      {
+        "name": "AMAZON.HelpIntent",
+        "samples": []
+      },
+      {
+        "name": "AMAZON.StopIntent",
+        "samples": []
+      },
+      {
+        "name": "ChangeChannel",
+        "samples": [
+          "Change the Channel to {nbc|Channel}",
+          "Go To Channel {nbc|Channel}",
+          "Channel {NBC|Channel}"
+        ],
+        "slots": [
+          {
+            "name": "Channel",
+            "type": "AMAZON.LITERAL"
+          }
+        ]
+      },
+      {
+        "name": "Down",
+        "samples": [
+          "Down"
+        ],
+        "slots": []
+      },
+      {
+        "name": "Exit",
+        "samples": [
+          "Exit",
+          "Cancel"
+        ],
+        "slots": []
+      },
+      {
+        "name": "GoToLiveTV",
+        "samples": [
+          "Live TV",
+          "Go To LIve TV",
+          "Live"
+        ],
+        "slots": []
+      },
+      {
+        "name": "Left",
+        "samples": [
+          "Left"
+        ],
+        "slots": []
+      },
+      {
+        "name": "Pause",
+        "samples": [
+          "Pause",
+          "to Pause"
+        ],
+        "slots": []
+      },
+      {
+        "name": "Play",
+        "samples": [
+          "Play",
+          "Continue",
+          "Resume"
+        ],
+        "slots": []
+      },
+      {
+        "name": "Record",
+        "samples": [
+          "Record"
+        ],
+        "slots": []
+      },
+      {
+        "name": "Right",
+        "samples": [
+          "Right"
+        ],
+        "slots": []
+      },
+      {
+        "name": "Select",
+        "samples": [
+          "Select",
+          "Enter"
+        ],
+        "slots": []
+      },
+      {
+        "name": "ShowInfo",
+        "samples": [
+          "Info",
+          "Show Info"
+        ],
+        "slots": []
+      },
+      {
+        "name": "ShowNowPlaying",
+        "samples": [
+          "Now Playing",
+          "Show Now Playing",
+          "Whats On",
+          "Show Recordings"
+        ],
+        "slots": []
+      },
+      {
+        "name": "ShowTheGuide",
+        "samples": [
+          "Show the Guide",
+          "Guide"
+        ],
+        "slots": []
+      },
+      {
+        "name": "Up",
+        "samples": [
+          "Up"
+        ],
+        "slots": []
+      }
+    ],
+    "invocationName": "tivo"
+  }
+}
