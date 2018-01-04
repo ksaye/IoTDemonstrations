@@ -1,0 +1,222 @@
+#r "Newtonsoft.Json"
+
+using System;
+using Microsoft.Azure.Devices;
+using System.Net;
+using System.Threading;
+using System.Net.Http;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+
+const string IoTConnectionString = "HostName=kevinsayIoT.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=cHCZh/+REMOVEDCr8PBsPc=";
+const string device = "OSMCControl";
+static ServiceClient serviceClient;
+
+public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, TraceWriter log)
+{
+    dynamic data = await req.Content.ReadAsAsync<object>();
+    //log.Info($"Content={data}");
+
+    // Set name to query string or body data
+    string intentName = data.request.intent.name;
+    log.Info($"intentName={intentName}");           
+    switch (intentName)
+    {
+        case "louder":
+            return req.CreateResponse(HttpStatusCode.OK, new
+            {
+                version = "1.1",
+                sessionAttributes = new { },
+                response = new
+                {
+                    outputSpeech = new
+                    {
+                        type = "PlainText",
+                        text = await callMethod("louder", log)
+                    },
+                    shouldEndSession = true
+                }
+            });
+        case "softer":
+            return req.CreateResponse(HttpStatusCode.OK, new
+            {
+                version = "1.1",
+                sessionAttributes = new { },
+                response = new
+                {
+                    outputSpeech = new
+                    {
+                        type = "PlainText",
+                        text = await callMethod("softer", log)
+                    },
+                    shouldEndSession = true
+                }
+            });
+        case "pause":
+            return req.CreateResponse(HttpStatusCode.OK, new
+            {
+                version = "1.1",
+                sessionAttributes = new { },
+                response = new
+                {
+                    outputSpeech = new
+                    {
+                        type = "PlainText",
+                        text = await callMethod("pause", log)
+                    },
+                    shouldEndSession = true
+                }
+            });
+        case "resume":
+            return req.CreateResponse(HttpStatusCode.OK, new
+            {
+                version = "1.1",
+                sessionAttributes = new { },
+                response = new
+                {
+                    outputSpeech = new
+                    {
+                        type = "PlainText",
+                        text = await callMethod("resume", log)
+                    },
+                    shouldEndSession = true
+                }
+            });
+        case "skipSong":
+            return req.CreateResponse(HttpStatusCode.OK, new
+            {
+                version = "1.1",
+                sessionAttributes = new { },
+                response = new
+                {
+                    outputSpeech = new
+                    {
+                        type = "PlainText",
+                        text = await callMethod("skipSong", log)
+                    },
+                    shouldEndSession = true
+                }
+            });
+        case "whatSong":
+            return req.CreateResponse(HttpStatusCode.OK, new
+            {
+                version = "1.1",
+                sessionAttributes = new { },
+                response = new
+                {
+                    outputSpeech = new
+                    {
+                        type = "PlainText",
+                        text = await callMethod("whatSong", log)
+                    },
+                    shouldEndSession = true
+                }
+            });    
+        case "getChannels":
+            HttpClient client = new HttpClient();
+            HttpResponseMessage response = await client.GetAsync("https://radiostations.azurewebsites.net/getChannels.aspx");
+            string result = await response.Content.ReadAsStringAsync();
+
+            dynamic JSON = JsonConvert.DeserializeObject(result);
+
+            int counter = 65;
+            string mystations = "";
+
+            foreach (dynamic station in JSON)
+            {
+                mystations = mystations + (Convert.ToChar(counter++) + ", " + station.Name + ",");
+            }            
+            
+            return req.CreateResponse(HttpStatusCode.OK, new
+            {
+                version = "1.1",
+                sessionAttributes = new { },
+                response = new
+                {
+                    outputSpeech = new
+                    {
+                        type = "PlainText",
+                        text = "Channels are: " + mystations
+                    },
+                    shouldEndSession = true
+                }
+            });
+        case "changeChannel":
+            string channel = data.request.intent.slots.Channel.value;
+
+            return req.CreateResponse(HttpStatusCode.OK, new
+            {
+                version = "1.1",
+                sessionAttributes = new { },
+                response = new
+                {
+                    outputSpeech = new
+                    {
+                        type = "PlainText",
+                        text = await changeChannel(channel, log)
+                    },
+                    shouldEndSession = true
+                }
+            });    
+                          
+    }
+    return null;
+}
+
+public static async Task<string> changeChannel(string channel, TraceWriter log)
+{
+    serviceClient = ServiceClient.CreateFromConnectionString(IoTConnectionString);
+
+    channel = channel.Substring(0, 1).ToUpper();
+
+    HttpClient client = new HttpClient();
+    HttpResponseMessage response = await client.GetAsync("https://radiostations.azurewebsites.net/getChannels.aspx");
+    string result = await response.Content.ReadAsStringAsync();
+
+    dynamic JSON = JsonConvert.DeserializeObject(result);
+    int mycounter = 65;
+    string realChannel = "";
+   
+    foreach (dynamic station in JSON)
+    {
+        string URL = station.URL.ToString();
+        if (Convert.ToString(Convert.ToChar(mycounter++)) == channel) {
+            int start = URL.IndexOf("=") + 1;
+            int end = URL.IndexOf("\" }  }") - start;
+            realChannel = URL.Substring(start, end);
+       }
+    } 
+
+    // create a method with response 5 seconds and connection 10 seconds
+    CloudToDeviceMethod C2Dmethod = new CloudToDeviceMethod("sendCommand", new TimeSpan(0,0,10), new TimeSpan(0,0,10));
+    C2Dmethod.SetPayloadJson("{\"station\":\"" + realChannel + "\"}");
+
+    // call the method
+    CloudToDeviceMethodResult myresult = serviceClient.InvokeDeviceMethodAsync(device, C2Dmethod).Result;
+
+    serviceClient.CloseAsync().Wait();
+    serviceClient.Dispose();
+
+    string resultJson = myresult.GetPayloadAsJson();
+    log.Info("response: " + resultJson);
+    return resultJson;
+}
+
+public static async Task<string> callMethod(string commandToSend, TraceWriter log)
+{
+    serviceClient = ServiceClient.CreateFromConnectionString(IoTConnectionString);
+
+    // create a method with response 5 seconds and connection 10 seconds
+    CloudToDeviceMethod C2Dmethod = new CloudToDeviceMethod("sendCommand", new TimeSpan(0,0,10), new TimeSpan(0,0,10));
+    C2Dmethod.SetPayloadJson("{\"command\":\"" + commandToSend + "\"}");
+
+    // call the method
+    CloudToDeviceMethodResult myresult = serviceClient.InvokeDeviceMethodAsync(device, C2Dmethod).Result;
+
+    serviceClient.CloseAsync();
+    serviceClient.Dispose();
+
+    string resultJson = myresult.GetPayloadAsJson();
+    log.Info("response: " + resultJson);
+    return resultJson;
+}
