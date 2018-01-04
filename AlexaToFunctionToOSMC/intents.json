@@ -1,0 +1,111 @@
+﻿{
+  "languageModel": {
+    "intents": [
+      {
+        "name": "AMAZON.CancelIntent",
+        "samples": []
+      },
+      {
+        "name": "AMAZON.HelpIntent",
+        "samples": []
+      },
+      {
+        "name": "AMAZON.StopIntent",
+        "samples": []
+      },
+      {
+        "name": "changeChannel",
+        "samples": [
+          "Change the Channel to {aa|Channel}",
+          "Go To Channel {aa|Channel}",
+          "Channel {aa|Channel}",
+          "Change Channel {aa|Channel}"
+        ],
+        "slots": [
+          {
+            "name": "Channel",
+            "type": "AMAZON.LITERAL"
+          }
+        ]
+      },
+      {
+        "name": "getChannels",
+        "samples": [
+          "get channels",
+          "channels",
+          "what channel"
+        ],
+        "slots": []
+      },
+      {
+        "name": "louder",
+        "samples": [
+          "Volume Up",
+          "Turn up",
+          "louder ",
+          "increase volume"
+        ],
+        "slots": []
+      },
+      {
+        "name": "one",
+        "samples": [],
+        "slots": []
+      },
+      {
+        "name": "pause",
+        "samples": [
+          "Pause",
+          "Stop",
+          "Hold"
+        ],
+        "slots": []
+      },
+      {
+        "name": "resume",
+        "samples": [
+          "Resume",
+          "Continue",
+          "Play",
+          "Start"
+        ],
+        "slots": []
+      },
+      {
+        "name": "skipSong",
+        "samples": [
+          "Skip Song",
+          "Next Song",
+          "Skip",
+          "Next"
+        ],
+        "slots": []
+      },
+      {
+        "name": "softer",
+        "samples": [
+          "turn down volume",
+          "softer",
+          "quieter",
+          "volume down"
+        ],
+        "slots": []
+      },
+      {
+        "name": "whatSong",
+        "samples": [
+          "What Song",
+          "Name Song",
+          "Song",
+          "Artist",
+          "Who",
+          "Who is this",
+          "Band",
+          "what Band is this"
+        ],
+        "slots": []
+      }
+    ],
+    "invocationName": "music"
+  }
+}
