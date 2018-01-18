@@ -1,14 +1,12 @@
-#r "Newtonsoft.Json"
-
 using System;
-using Microsoft.Azure.Devices;
+using Microsoft.Azure.Devices;  // need version 1.4 else the Async will not reply
 using System.Net;
 using System.Threading;
 using System.Net.Http;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-const string IoTConnectionString = "HostName=kevinsayIoT.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=cHCZh/+REMOVEDCr8PBsPc=";
+const string IoTConnectionString = "HostName=kevinsayIoT.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=DkREMOVEDF10=";
 const string device = "OSMCControl";
 static ServiceClient serviceClient;
 
@@ -92,7 +90,7 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, TraceW
                     outputSpeech = new
                     {
                         type = "PlainText",
-                        text = await callMethod("skipSong", log)
+                        text = "Now Playing " + await callMethod("skipSong", log)
                     },
                     shouldEndSession = true
                 }
@@ -107,7 +105,7 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, TraceW
                     outputSpeech = new
                     {
                         type = "PlainText",
-                        text = await callMethod("whatSong", log)
+                        text = "Now Playing " + await callMethod("whatSong", log)
                     },
                     shouldEndSession = true
                 }
@@ -124,7 +122,7 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, TraceW
 
             foreach (dynamic station in JSON)
             {
-                mystations = mystations + (Convert.ToChar(counter++) + ", " + station.Name + ",");
+                mystations = mystations + station.Name + " is channel " + (Convert.ToChar(counter++) + ",");
             }            
             
             return req.CreateResponse(HttpStatusCode.OK, new
@@ -136,9 +134,9 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, TraceW
                     outputSpeech = new
                     {
                         type = "PlainText",
-                        text = "Channels are: " + mystations
+                        text = mystations
                     },
-                    shouldEndSession = true
+                    shouldEndSession = false
                 }
             });
         case "changeChannel":
@@ -157,7 +155,22 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, TraceW
                     },
                     shouldEndSession = true
                 }
-            });    
+            });
+        case "AMAZON.HelpIntent":
+            return req.CreateResponse(HttpStatusCode.OK, new
+            {
+                version = "1.1",
+                sessionAttributes = new { },
+                response = new
+                {
+                    outputSpeech = new
+                    {
+                        type = "PlainText",
+                        text = "you can try commands like, ask music to,,, pause, resume, skip song, what's playing, get channels, change channel, volume up or volume down"
+                    },
+                    shouldEndSession = true
+                }
+            });     
                           
     }
     return null;
@@ -166,6 +179,7 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, TraceW
 public static async Task<string> changeChannel(string channel, TraceWriter log)
 {
     serviceClient = ServiceClient.CreateFromConnectionString(IoTConnectionString);
+    string stationName = "";
 
     channel = channel.Substring(0, 1).ToUpper();
 
@@ -184,8 +198,11 @@ public static async Task<string> changeChannel(string channel, TraceWriter log)
             int start = URL.IndexOf("=") + 1;
             int end = URL.IndexOf("\" }  }") - start;
             realChannel = URL.Substring(start, end);
+            stationName = station.Name;
        }
     } 
+
+    log.Info("channel: " + channel + " (" + stationName + ") is station: " + realChannel);
 
     // create a method with response 5 seconds and connection 10 seconds
     CloudToDeviceMethod C2Dmethod = new CloudToDeviceMethod("sendCommand", new TimeSpan(0,0,10), new TimeSpan(0,0,10));
@@ -197,9 +214,13 @@ public static async Task<string> changeChannel(string channel, TraceWriter log)
     serviceClient.CloseAsync().Wait();
     serviceClient.Dispose();
 
-    string resultJson = myresult.GetPayloadAsJson();
-    log.Info("response: " + resultJson);
-    return resultJson;
+    dynamic resultJson = JsonConvert.DeserializeObject(myresult.GetPayloadAsJson());
+
+    //string resultJson = myresult.GetPayloadAsJson();
+
+    log.Info("response: " + resultJson.status);
+
+    return "Now playing " + stationName;
 }
 
 public static async Task<string> callMethod(string commandToSend, TraceWriter log)
@@ -216,7 +237,13 @@ public static async Task<string> callMethod(string commandToSend, TraceWriter lo
     serviceClient.CloseAsync();
     serviceClient.Dispose();
 
-    string resultJson = myresult.GetPayloadAsJson();
-    log.Info("response: " + resultJson);
-    return resultJson;
+    dynamic resultJson = JsonConvert.DeserializeObject(myresult.GetPayloadAsJson());
+
+    log.Info("response: " + resultJson.status);
+
+    if (resultJson.status == "success") {
+        return "ok";
+    } else {
+    return resultJson.status;
+    }
 }
