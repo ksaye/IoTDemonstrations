@@ -1,10 +1,10 @@
-using Microsoft.Azure.Devices;  // need version 1.4, else the Async will not work
+using Microsoft.Azure.Devices;
 using System.Net;
 using System.Threading;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-const string IoTConnectionString = "HostName=kevinsayIoT.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=DkREMOVED10=";
+const string IoTConnectionString = "HostName=kevinsayIoT.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=DkREMOVED=";
 const string device = "TivoControl";
 static ServiceClient serviceClient;
 
@@ -18,6 +18,21 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, TraceW
     log.Info($"intentName={intentName}");           
     switch (intentName)
     {
+        case "AMAZON.HelpIntent":
+            return req.CreateResponse(HttpStatusCode.OK, new
+            {
+                version = "1.1",
+                sessionAttributes = new { },
+                response = new
+                {
+                    outputSpeech = new
+                    {
+                        type = "PlainText",
+                        text = "you can try commands like, ask tivo to,,, pause, resume, show the guide, live tv, show tivo menu, now playing, up, down, left, right, exit, select, record, change channel to fox"
+                    },
+                    shouldEndSession = true
+                }
+            });
         case "Pause":
             return req.CreateResponse(HttpStatusCode.OK, new
             {
