@@ -1,15 +1,17 @@
-using Microsoft.Azure.Devices;
+using Microsoft.Azure.Devices;  // need version 1.4, else the Async will not work
 using System.Net;
 using System.Threading;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
-const string IoTConnectionString = "HostName=kevinsayIoT.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=cHCZREMOVEDBsPc=";
+const string IoTConnectionString = "HostName=kevinsayIoT.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=DkREMOVED10=";
 const string device = "TivoControl";
 static ServiceClient serviceClient;
 
 public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, TraceWriter log)
 {
     dynamic data = await req.Content.ReadAsAsync<object>();
-    log.Info($"Content={data}");
+    //log.Info($"Content={data}");
 
     // Set name to query string or body data
     string intentName = data.request.intent.name;
@@ -214,6 +216,8 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, TraceW
         case "ChangeChannel":
             string channel = data.request.intent.slots.Channel.value;
 
+            log.Info("Channel: " + channel);
+
             switch (channel.ToLower()){
                 case "fox":{
                     channel = "4.1";
@@ -241,7 +245,7 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, TraceW
                 };
             }
 
-            callMethod("TELEPORT LIVETV", log);
+            //callMethod("TELEPORT LIVETV", log);
             
             return req.CreateResponse(HttpStatusCode.OK, new
             {
@@ -273,9 +277,16 @@ static string callMethod(string commandToSend, TraceWriter log)
     // call the method
     CloudToDeviceMethodResult myresult = serviceClient.InvokeDeviceMethodAsync(device, C2Dmethod).Result;
 
-    log.Info(myresult.ToString());
+    serviceClient.CloseAsync().Wait();
+    serviceClient.Dispose();
 
-    string resultJson = myresult.GetPayloadAsJson();
-    log.Info("response: " + resultJson);
-    return null ;
+    dynamic resultJson = JsonConvert.DeserializeObject(myresult.GetPayloadAsJson());
+
+    log.Info("response: " + resultJson.status);
+
+    if (resultJson.status == "Success") {
+        return "ok";
+    } else {
+    return resultJson.status;
+    }
 }
