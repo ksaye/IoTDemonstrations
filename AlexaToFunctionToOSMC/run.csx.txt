@@ -136,7 +136,7 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, TraceW
                         type = "PlainText",
                         text = mystations
                     },
-                    shouldEndSession = false
+                    shouldEndSession = true
                 }
             });
         case "changeChannel":
