@@ -257,14 +257,8 @@ def main(connection_string):
                             img2 = to_grayscale(frame.astype(float))
                         else:
                             img1 = priorFrame.astype(float)
-                            img2 = frame.astype(float)
-                    
-                        # if we want to convert to grayscale -- possible future enhancement
-                        # img1 = to_grayscale(priorFrame.astype(float))
-                        # img2 = to_grayscale(frame.astype(float)) 
-                        # n_m, n_0 = compare_images(img1, img2)
-                        # also note we can normalize in: def compare_images(img1, img2):
-                        
+                            img2 = frame.astype(float)                   
+                       
                         n_m, n_0 = compare_images(img1, img2)
                         ManhattanImageChange = n_0*1.0/frame.size
                         ZeroImageChange = n_m*1.0/frame.size
