@@ -199,120 +199,120 @@ class HubManager(object):
 def main(connection_string):
     global SEND_MESSAGECOUNTER
 
-#    try:
-    print ( "\nPython %s\n" % sys.version )
-    print ( "IoT Hub Client for Python" )
+    try:
+        print ( "\nPython %s\n" % sys.version )
+        print ( "IoT Hub Client for Python" )
 
-    hub_manager = HubManager(connection_string)
+        hub_manager = HubManager(connection_string)
 
-    print ( "Starting the IoT Hub Python sample using protocol %s..." % hub_manager.client_protocol )
+        print ( "Starting the IoT Hub Python sample using protocol %s..." % hub_manager.client_protocol )
 
-    priorImage = [None] * 1
+        priorImage = [None] * 1
 
-    while True:
-#            try:
-        # removing old files
-        now = time.time()
-        for f in os.listdir("."):
-            if "-image.jpg" in f:
-                fullpath = os.path.join(".", f)
-                if os.stat(fullpath).st_mtime < (now - keepImageFiles):
-                    if os.path.isfile(fullpath):
-                        os.remove(fullpath)
-        
-        time.sleep(imageProcessingInterval)
-
-        camaraArray = json.loads(camaraJSON)
-
-        # in case we have additionl cameras to monitor, we have to expand the priorImage array
-        if len(camaraArray) != len(priorImage):
-            priorImage = [None] * len(camaraArray)
-
-        arrayCounter = 0
-
-        # for each camara or URL we manage
-        for camara in camaraArray:
-            camaraName = camara
-            camaraURL = camaraArray[camara]
-            filename = str(camaraName + '-' + time.strftime('%Y-%m-%d-%H-%M-%S') +'-image.jpg')
-
-            print "Processing camera: ", camaraName, " with URL: ", camaraURL
-
-            vcap = cv2.VideoCapture(camaraURL)
-            ret, frame = vcap.read()
-
-            if priorImage[arrayCounter] is None:
-                # we don't have a prior image, must be the first time we saw this camera or TWIN change
-                ManhattanImageChange = 0.0
-                ZeroImageChange = 0.0
-
-                # naming and writing the image file
-                cv2.imwrite(filename, frame)
+        while True:
+            try:
+                # removing old files
+                now = time.time()
+                for f in os.listdir("."):
+                    if "-image.jpg" in f:
+                        fullpath = os.path.join(".", f)
+                        if os.stat(fullpath).st_mtime < (now - keepImageFiles):
+                            if os.path.isfile(fullpath):
+                                os.remove(fullpath)
                 
-            else:
-                priorFrame = priorImage[arrayCounter]
+                time.sleep(imageProcessingInterval)
 
-                if imageToGrayScale:
-                    img1 = to_grayscale(priorFrame.astype(float))
-                    img2 = to_grayscale(frame.astype(float))
-                else:
-                    img1 = priorFrame.astype(float)
-                    img2 = frame.astype(float)
-            
-                # if we want to convert to grayscale -- possible future enhancement
-                # img1 = to_grayscale(priorFrame.astype(float))
-                # img2 = to_grayscale(frame.astype(float)) 
-                # n_m, n_0 = compare_images(img1, img2)
-                # also note we can normalize in: def compare_images(img1, img2):
-                
-                n_m, n_0 = compare_images(img1, img2)
-                ManhattanImageChange = n_0*1.0/frame.size
-                ZeroImageChange = n_m*1.0/frame.size
+                camaraArray = json.loads(camaraJSON)
 
-                # naming and writing the image file
-                cv2.imwrite(filename, frame)
+                # in case we have additionl cameras to monitor, we have to expand the priorImage array
+                if len(camaraArray) != len(priorImage):
+                    priorImage = [None] * len(camaraArray)
 
-            # reading and encoding the file for the JSON message
-            with open(filename, "rb") as image_file:
-                encoded_string = base64.b64encode(image_file.read())
+                arrayCounter = 0
 
-            # creating the JSON for the IoTMessage
-            IoTMessageJSON = {}
-            #IoTMessageJSON['imageBase64'] = encoded_string
-            IoTMessageJSON['GrayScale'] = imageToGrayScale
-            IoTMessageJSON['Normalized'] = imageNormalization
-            IoTMessageJSON['ManhattanImageChange'] = ManhattanImageChange 
-            IoTMessageJSON['imageFileName'] = filename
-            IoTMessageJSON['imageURL'] = str("http://" + socket.gethostname() + ":" + str(WebServicePort) + "/" + filename)
-            IoTMessageJSON['ZeroImageChange'] = ZeroImageChange
-            IoTMessageJSON['imageSize'] = os.path.getsize(filename)
-#                        IoTMessageJSON['imageWidth'] = cv2.VideoCapture.get(cv.CV_CAP_PROP_FRAME_WIDTH)
-#                        IoTMessageJSON['imageHeight'] = cv2.VideoCapture.get(cv.CV_CAP_PROP_FRAME_HEIGHT)
-#                        IoTMessageJSON['imageFPS'] = cv2.VideoCapture.get(cv.CV_CAP_PROP_FPS)
-#                        IoTMessageJSON['imageFormat'] = cv2.VideoCapture.get(cv.CV_CAP_PROP_FRAME_FORMAT)
-            IoTMessageJSON['camaraName'] = camaraName
-            IoTMessageJSON['camaraURL'] = camaraURL
-            IoTMessageJSON['dateTime'] = time.strftime('%Y-%m-%dT%H:%M:%S')
+                # for each camara or URL we manage
+                for camara in camaraArray:
+                    camaraName = camara
+                    camaraURL = camaraArray[camara]
+                    filename = str(camaraName + '-' + time.strftime('%Y-%m-%d-%H-%M-%S') +'-image.jpg')
 
-            IoTMessage = IoTHubMessage(bytearray(json.dumps(IoTMessageJSON), 'utf8'))
+                    print "Processing camera: ", camaraName, " with URL: ", camaraURL
 
-            hub_manager.forward_event_to_output("output1", IoTMessage, SEND_MESSAGECOUNTER)
-            SEND_MESSAGECOUNTER += 1
+                    vcap = cv2.VideoCapture(camaraURL)
+                    ret, frame = vcap.read()
 
-            priorImage[arrayCounter] = frame
-            arrayCounter += 1
+                    if priorImage[arrayCounter] is None:
+                        # we don't have a prior image, must be the first time we saw this camera or TWIN change
+                        ManhattanImageChange = 0.0
+                        ZeroImageChange = 0.0
 
-            vcap.release()
+                        # naming and writing the image file
+                        cv2.imwrite(filename, frame)
+                        
+                    else:
+                        priorFrame = priorImage[arrayCounter]
 
-        #except: # catch *all* exceptions
-            #   e = sys.exc_info()[0]
-            #  print ( "Unexpected error in while camaraChange == False loop %s" % e )
+                        if imageToGrayScale:
+                            img1 = to_grayscale(priorFrame.astype(float))
+                            img2 = to_grayscale(frame.astype(float))
+                        else:
+                            img1 = priorFrame.astype(float)
+                            img2 = frame.astype(float)
+                    
+                        # if we want to convert to grayscale -- possible future enhancement
+                        # img1 = to_grayscale(priorFrame.astype(float))
+                        # img2 = to_grayscale(frame.astype(float)) 
+                        # n_m, n_0 = compare_images(img1, img2)
+                        # also note we can normalize in: def compare_images(img1, img2):
+                        
+                        n_m, n_0 = compare_images(img1, img2)
+                        ManhattanImageChange = n_0*1.0/frame.size
+                        ZeroImageChange = n_m*1.0/frame.size
 
-    #except IoTHubError as iothub_error:
-    #    print ( "Unexpected error %s from IoTHub" % iothub_error )
-    #    return
-    #except KeyboardInterrupt:
-    #    print ( "IoTHubClient sample stopped" )
+                        # naming and writing the image file
+                        cv2.imwrite(filename, frame)
+
+                    # reading and encoding the file for the JSON message
+                    with open(filename, "rb") as image_file:
+                        encoded_string = base64.b64encode(image_file.read())
+
+                    # creating the JSON for the IoTMessage
+                    IoTMessageJSON = {}
+                    #IoTMessageJSON['imageBase64'] = encoded_string
+                    IoTMessageJSON['GrayScale'] = imageToGrayScale
+                    IoTMessageJSON['Normalized'] = imageNormalization
+                    IoTMessageJSON['ManhattanImageChange'] = ManhattanImageChange 
+                    IoTMessageJSON['imageFileName'] = filename
+                    IoTMessageJSON['imageURL'] = str("http://" + socket.gethostbyname(socket.gethostname()) + ":" + str(WebServicePort) + "/" + filename)
+                    IoTMessageJSON['ZeroImageChange'] = ZeroImageChange
+                    IoTMessageJSON['imageSize'] = os.path.getsize(filename)
+                    #                        IoTMessageJSON['imageWidth'] = cv2.VideoCapture.get(cv.CV_CAP_PROP_FRAME_WIDTH)
+                    #                        IoTMessageJSON['imageHeight'] = cv2.VideoCapture.get(cv.CV_CAP_PROP_FRAME_HEIGHT)
+                    #                        IoTMessageJSON['imageFPS'] = cv2.VideoCapture.get(cv.CV_CAP_PROP_FPS)
+                    #                        IoTMessageJSON['imageFormat'] = cv2.VideoCapture.get(cv.CV_CAP_PROP_FRAME_FORMAT)
+                    IoTMessageJSON['camaraName'] = camaraName
+                    IoTMessageJSON['camaraURL'] = camaraURL
+                    IoTMessageJSON['dateTime'] = time.strftime('%Y-%m-%dT%H:%M:%S')
+
+                    IoTMessage = IoTHubMessage(bytearray(json.dumps(IoTMessageJSON), 'utf8'))
+
+                    hub_manager.forward_event_to_output("output1", IoTMessage, SEND_MESSAGECOUNTER)
+                    SEND_MESSAGECOUNTER += 1
+
+                    priorImage[arrayCounter] = frame
+                    arrayCounter += 1
+
+                    vcap.release()
+
+            except: # catch *all* exceptions
+                e = sys.exc_info()[0]
+                print ( "Unexpected error in while camaraChange == False loop %s" % e )
+
+    except IoTHubError as iothub_error:
+        print ( "Unexpected error %s from IoTHub" % iothub_error )
+        return
+    except KeyboardInterrupt:
+        print ( "IoTHubClient sample stopped" )
 
 if __name__ == '__main__':
     try:
