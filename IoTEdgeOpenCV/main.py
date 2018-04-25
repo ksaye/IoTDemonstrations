@@ -12,8 +12,9 @@ import SimpleHTTPServer
 import SocketServer
 import thread
 import socket
+import commands
 
-from scipy.misc import imread
+#from scipy.misc import imread
 from scipy.linalg import norm
 from scipy import sum, average
 
@@ -202,105 +203,146 @@ def main(connection_string):
     try:
         print ( "\nPython %s\n" % sys.version )
         print ( "IoT Hub Client for Python" )
+        print "mounted: ", commands.getstatusoutput('mount | grep video')
+        print "classify: ", commands.getstatusoutput('ls -all /usr/share/opencv/haarcascades/haarcascade_frontalface_alt.xml')
 
         hub_manager = HubManager(connection_string)
 
         print ( "Starting the IoT Hub Python sample using protocol %s..." % hub_manager.client_protocol )
 
         priorImage = [None] * 1
+        face_cascade = cv2.CascadeClassifier('/usr/share/opencv/haarcascades/haarcascade_frontalface_alt.xml')
 
         while True:
-            try:
-                # removing old files
-                now = time.time()
-                for f in os.listdir("."):
-                    if "-image.jpg" in f:
-                        fullpath = os.path.join(".", f)
-                        if os.stat(fullpath).st_mtime < (now - keepImageFiles):
-                            if os.path.isfile(fullpath):
-                                os.remove(fullpath)
-                
-                time.sleep(imageProcessingInterval)
+            #try:
+            # removing old files
+            now = time.time()
+            for f in os.listdir("."):
+                if "-image.jpg" in f:
+                    fullpath = os.path.join(".", f)
+                    if os.stat(fullpath).st_mtime < (now - keepImageFiles):
+                        if os.path.isfile(fullpath):
+                            os.remove(fullpath)
+            
+            time.sleep(imageProcessingInterval)
 
-                camaraArray = json.loads(camaraJSON)
+            camaraArray = json.loads(camaraJSON)
 
-                # in case we have additionl cameras to monitor, we have to expand the priorImage array
-                if len(camaraArray) != len(priorImage):
-                    priorImage = [None] * len(camaraArray)
+            # in case we have additionl cameras to monitor, we have to expand the priorImage array
+            if len(camaraArray) != len(priorImage):
+                priorImage = [None] * len(camaraArray)
 
-                arrayCounter = 0
+            arrayCounter = 0
 
-                # for each camara or URL we manage
-                for camara in camaraArray:
-                    camaraName = camara
+            # for each camara or URL we manage
+            for camara in camaraArray:
+                camaraName = camara
+                camaraURL = camaraArray[camara]
+                filename = str(camaraName + '-' + time.strftime('%Y-%m-%d-%H-%M-%S') +'-image.jpg')
+
+                print "Processing camera: ", camaraName, " with URL: ", camaraURL
+
+                try:
+                    camaraURL = int(camaraURL)
+                except:
                     camaraURL = camaraArray[camara]
-                    filename = str(camaraName + '-' + time.strftime('%Y-%m-%d-%H-%M-%S') +'-image.jpg')
 
-                    print "Processing camera: ", camaraName, " with URL: ", camaraURL
+                vcap = cv2.VideoCapture(camaraURL)
 
-                    vcap = cv2.VideoCapture(camaraURL)
-                    ret, frame = vcap.read()
+                ret, frame = vcap.read()
+                cv2.imwrite("current.jpg", frame)
 
-                    if priorImage[arrayCounter] is None:
-                        # we don't have a prior image, must be the first time we saw this camera or TWIN change
-                        ManhattanImageChange = 0.0
-                        ZeroImageChange = 0.0
+                if priorImage[arrayCounter] is None:
+                    # we don't have a prior image, must be the first time we saw this camera or TWIN change
+                    ManhattanImageChange = 0.0
+                    ZeroImageChange = 0.0
 
-                        # naming and writing the image file
-                        cv2.imwrite(filename, frame)
-                        
+                    # naming and writing the image file
+                    cv2.imwrite(filename, frame)
+                    
+                else:
+                    priorFrame = priorImage[arrayCounter]
+
+                    if imageToGrayScale:
+                        img1 = to_grayscale(priorFrame.astype(float))
+                        img2 = to_grayscale(frame.astype(float))
                     else:
-                        priorFrame = priorImage[arrayCounter]
+                        img1 = priorFrame.astype(float)
+                        img2 = frame.astype(float)                   
+                    
+                    n_m, n_0 = compare_images(img1, img2)
+                    ManhattanImageChange = n_0*1.0/frame.size
+                    ZeroImageChange = n_m*1.0/frame.size
 
-                        if imageToGrayScale:
-                            img1 = to_grayscale(priorFrame.astype(float))
-                            img2 = to_grayscale(frame.astype(float))
-                        else:
-                            img1 = priorFrame.astype(float)
-                            img2 = frame.astype(float)                   
-                       
-                        n_m, n_0 = compare_images(img1, img2)
-                        ManhattanImageChange = n_0*1.0/frame.size
-                        ZeroImageChange = n_m*1.0/frame.size
+                    # naming and writing the image file
+                    cv2.imwrite(filename, frame)
 
-                        # naming and writing the image file
-                        cv2.imwrite(filename, frame)
+                # reading and encoding the file for the JSON message
+                with open(filename, "rb") as image_file:
+                    encoded_string = base64.b64encode(image_file.read())
+                
+                # creating the JSON for the IoTMessage
+                IoTMessageJSON = {}
+                IoTMessageJSON['faces'] = 0
 
-                    # reading and encoding the file for the JSON message
-                    with open(filename, "rb") as image_file:
-                        encoded_string = base64.b64encode(image_file.read())
+                try:
+                    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                    faces = face_cascade.detectMultiScale(gray, 1.1, 5)
+                except:
+                    faces = None
+                    e = sys.exc_info()[0]
+                    print ( "Error with face recognition %s" % e )
+                
+                if faces is not None:
+                    print "Found ", str(len(faces)), " face(s)"
+                    IoTMessageJSON['faces'] = len(faces)
+                    faceCounter = 0
+                    for (x,y,w,h) in faces:
+                        faceCounter += 1
+                        cv2.rectangle(frame,(x,y),(x+w,y+h),(255,0,0),2)
+                        facefilename = str('face-' + str(faceCounter) + '-' + camaraName + '-' + time.strftime('%Y-%m-%d-%H-%M-%S') +'-image.jpg')
+                        cv2.imwrite(facefilename,frame[y:y+h, x:x+w])
+                        IoTMessageJSON['face' + str(faceCounter) + camaraName + 'URL'] = str("http://" + socket.gethostbyname(socket.gethostname()) + ":" + str(WebServicePort) + "/" + facefilename)
+                    
+                    framefilename = str(camaraName + '-' + time.strftime('%Y-%m-%d-%H-%M-%S') +'-frame-image.jpg')
+                    IoTMessageJSON['framedImageURL'] = str("http://" + socket.gethostbyname(socket.gethostname()) + ":" + str(WebServicePort) + "/" + framefilename)
+                    cv2.imwrite(framefilename, frame)
+                
+                #IoTMessageJSON['imageBase64'] = encoded_string
+                IoTMessageJSON['GrayScale'] = imageToGrayScale
+                IoTMessageJSON['Normalized'] = imageNormalization
+                IoTMessageJSON['ManhattanImageChange'] = ManhattanImageChange 
+                IoTMessageJSON[camaraName +'imageFileName'] = filename
+                IoTMessageJSON['imageFileName'] = filename
+                IoTMessageJSON[camaraName + 'imageURL'] = str("http://" + socket.gethostbyname(socket.gethostname()) + ":" + str(WebServicePort) + "/" + filename)
+                IoTMessageJSON['imageURL'] = str("http://" + socket.gethostbyname(socket.gethostname()) + ":" + str(WebServicePort) + "/" + filename)
+                IoTMessageJSON['ModuleIPAddress'] = str(socket.gethostbyname(socket.gethostname()))
+                IoTMessageJSON['ZeroImageChange'] = ZeroImageChange
+                IoTMessageJSON[camaraName + '-imageSize'] = os.path.getsize(filename)
+                IoTMessageJSON['imageSize'] = os.path.getsize(filename)
+                #                        IoTMessageJSON['imageWidth'] = cv2.VideoCapture.get(cv.CV_CAP_PROP_FRAME_WIDTH)
+                #                        IoTMessageJSON['imageHeight'] = cv2.VideoCapture.get(cv.CV_CAP_PROP_FRAME_HEIGHT)
+                #                        IoTMessageJSON['imageFPS'] = cv2.VideoCapture.get(cv.CV_CAP_PROP_FPS)
+                #                        IoTMessageJSON['imageFormat'] = cv2.VideoCapture.get(cv.CV_CAP_PROP_FRAME_FORMAT)
+                IoTMessageJSON['camaraName'] = camaraName
+                IoTMessageJSON['camaraURL'] = camaraURL
+                IoTMessageJSON['dateTime'] = time.strftime('%Y-%m-%dT%H:%M:%S')
 
-                    # creating the JSON for the IoTMessage
-                    IoTMessageJSON = {}
-                    #IoTMessageJSON['imageBase64'] = encoded_string
-                    IoTMessageJSON['GrayScale'] = imageToGrayScale
-                    IoTMessageJSON['Normalized'] = imageNormalization
-                    IoTMessageJSON['ManhattanImageChange'] = ManhattanImageChange 
-                    IoTMessageJSON['imageFileName'] = filename
-                    IoTMessageJSON['imageURL'] = str("http://" + socket.gethostbyname(socket.gethostname()) + ":" + str(WebServicePort) + "/" + filename)
-                    IoTMessageJSON['ZeroImageChange'] = ZeroImageChange
-                    IoTMessageJSON['imageSize'] = os.path.getsize(filename)
-                    #                        IoTMessageJSON['imageWidth'] = cv2.VideoCapture.get(cv.CV_CAP_PROP_FRAME_WIDTH)
-                    #                        IoTMessageJSON['imageHeight'] = cv2.VideoCapture.get(cv.CV_CAP_PROP_FRAME_HEIGHT)
-                    #                        IoTMessageJSON['imageFPS'] = cv2.VideoCapture.get(cv.CV_CAP_PROP_FPS)
-                    #                        IoTMessageJSON['imageFormat'] = cv2.VideoCapture.get(cv.CV_CAP_PROP_FRAME_FORMAT)
-                    IoTMessageJSON['camaraName'] = camaraName
-                    IoTMessageJSON['camaraURL'] = camaraURL
-                    IoTMessageJSON['dateTime'] = time.strftime('%Y-%m-%dT%H:%M:%S')
+                IoTMessage = IoTHubMessage(bytearray(json.dumps(IoTMessageJSON), 'utf8'))
 
-                    IoTMessage = IoTHubMessage(bytearray(json.dumps(IoTMessageJSON), 'utf8'))
+                hub_manager.forward_event_to_output("output1", IoTMessage, SEND_MESSAGECOUNTER)
 
-                    hub_manager.forward_event_to_output("output1", IoTMessage, SEND_MESSAGECOUNTER)
-                    SEND_MESSAGECOUNTER += 1
+                print "sent: ", json.dumps(IoTMessageJSON)
+                SEND_MESSAGECOUNTER += 1
 
-                    priorImage[arrayCounter] = frame
-                    arrayCounter += 1
+                priorImage[arrayCounter] = frame
+                arrayCounter += 1
 
-                    vcap.release()
+                vcap.release()
 
-            except: # catch *all* exceptions
-                e = sys.exc_info()[0]
-                print ( "Unexpected error in while camaraChange == False loop %s" % e )
+            #except: # catch *all* exceptions
+            #    e = sys.exc_info()[0]
+            #    print ( "Unexpected error in while camaraChange == False loop %s" % e )
 
     except IoTHubError as iothub_error:
         print ( "Unexpected error %s from IoTHub" % iothub_error )
@@ -317,3 +359,4 @@ if __name__ == '__main__':
         sys.exit(1)
 
     main(CONNECTION_STRING)
+    
