@@ -1,0 +1,7 @@
+azure-iothub-device-client==1.3.0.0b0
+wheel
+tensorflow
+numpy
+scipy
+imageio
+requests
