@@ -239,8 +239,8 @@ def main(connection_string):
 
                 # for each camara or URL we manage
                 for camara in camaraArray:
-                    #myIP = socket.gethostbyname(socket.gethostname())
-                    myIP = "192.168.15.172"
+                    myIP = socket.gethostbyname(socket.gethostname())
+                    #myIP = "192.168.15.172"
                     camaraName = camara
                     camaraURL = camaraArray[camara]
                     filename = str(camaraName + '-' + time.strftime('%Y-%m-%d-%H-%M-%S') +'-image.jpg')
