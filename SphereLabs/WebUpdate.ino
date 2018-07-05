@@ -8,10 +8,10 @@
 #include <ESP8266mDNS.h>
 
 const char* host        = "esp8266-webupdate";
-const char* ssid        = "YourSSIDHere";
-const char* password    = "YourSSIDPasswordHere";
-const int loopdelay     = 2000;     // for version 1.0, this value is 1000, for 2.0 it is 2000
+const char* ssid        = "IOTDEMO";
+const char* password    = "iotDemo1";
 const float codeversion = 2.0;      // we report this value via the UART
+const int loopdelay     = 1000;
 int loopcounter         = 0;
 bool ledon              = false;
 
@@ -23,7 +23,9 @@ void setup(void){
   pinMode(LED_BUILTIN, OUTPUT);
   Serial.println();
   Serial.println("Booting Sketch...");
-  WiFi.mode(WIFI_AP_STA);
+  WiFi.stopSmartConfig();
+  WiFi.enableAP(false);
+  WiFi.hostname(host);
   WiFi.begin(ssid, password);
   if(WiFi.waitForConnectResult() == WL_CONNECTED){
     MDNS.begin(host);
@@ -69,12 +71,13 @@ void setup(void){
 }
 
 void loop(void){
-  if (loopcounter >= loopdelay) {
+  if (loopcounter >= (loopdelay * codeversion * codeversion)) {
     loopcounter = 0;
-    Serial.print("version:");
+    Serial.print("{\"version\":");
     Serial.print(codeversion);
-    Serial.print(";IP:");
-    Serial.println(WiFi.localIP().toString());
+    Serial.print(",\"IP\":\"");
+    Serial.print(WiFi.localIP().toString());
+    Serial.println("\"}");
     if (ledon) {
         digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
         ledon = false;
