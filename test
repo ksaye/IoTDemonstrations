@@ -1,0 +1,363 @@
+# Copyright (c) Microsoft. All rights reserved.
+# Licensed under the MIT license. See LICENSE file in the project root for
+# full license information.
+
+# most of this is based off of the object_dection from Tensorflow: https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/installation.md
+
+#pylint: disable=E0401,E0611,E1101,W0612,E1129
+
+import numpy as np
+import os
+import six.moves.urllib as urllib
+import sys
+import imageio
+import tarfile
+import tensorflow as tf
+import zipfile
+import json
+import time
+import datetime
+try:
+    # For Python 3.0 and later
+    from urllib.request import urlopen
+    import io
+    import http.server
+    import socketserver
+    import _thread
+    import subprocess
+except ImportError:
+    # Fall back to Python 2's urllib2
+    from urllib2 import urlopen
+    import thread
+    import commands
+    import SimpleHTTPServer
+    import SocketServer
+
+import socket
+from collections import defaultdict
+from io import StringIO
+from matplotlib import pyplot as plt
+from PIL import Image
+
+# This is needed since the notebook is stored in the object_detection folder.
+sys.path.append("..")
+from object_detection.utils import ops as utils_ops
+import random
+import iothub_client
+
+from iothub_client import IoTHubModuleClient, IoTHubClientError, IoTHubTransportProvider
+from iothub_client import IoTHubMessage, IoTHubMessageDispositionResult, IoTHubError
+
+from utils import label_map_util
+from utils import visualization_utils as vis_util
+
+# messageTimeout - the maximum time in milliseconds until a message times out.
+# The timeout period starts at IoTHubModuleClient.send_event_async.
+# By default, messages do not expire.
+MESSAGE_TIMEOUT = 10000
+
+# global counters
+RECEIVE_CALLBACKS = 0
+SEND_CALLBACKS = 0
+TWIN_CALLBACKS = 0
+MESSAGECOUNTER = 0
+SEND_REPORTED_STATE_CALLBACKS = 0
+
+# Choose HTTP, AMQP or MQTT as transport protocol.  Currently only MQTT is supported.
+PROTOCOL = IoTHubTransportProvider.MQTT
+
+# Web Service port
+WebServicePort = 8181
+
+# Tensorflow variables
+
+# You can change the next 3 lines: Name, Path and Num Classes to use the large or small model
+#MODEL_NAME = 'faster_rcnn_inception_resnet_v2_atrous_oid_2018_01_28'
+MODEL_NAME = 'ssd_mobilenet_v1_coco_2017_11_17'
+# faster, yet less complete modules are ssd_mobilenet_v1_coco_2017_11_17 with label file mscoco_label_map.pbtxt and 90 classes
+
+# List of the strings that is used to add correct label for each box.
+#PATH_TO_LABELS = os.path.join('data', 'oid_bbox_trainable_label_map.pbtxt')
+PATH_TO_LABELS = os.path.join('data', 'mscoco_label_map.pbtxt')
+
+#NUM_CLASSES = 546
+NUM_CLASSES = 90
+
+minScore = .60
+MODEL_FILE = MODEL_NAME + '.tar.gz'
+DOWNLOAD_BASE = 'http://download.tensorflow.org/models/object_detection/'
+
+# Path to frozen detection graph. This is the actual model that is used for the object detection.
+PATH_TO_CKPT = MODEL_NAME + '/frozen_inference_graph.pb'
+
+IMAGE_SIZE = (12, 8)
+
+detection_graph = tf.Graph()
+
+label_map = label_map_util.load_labelmap(PATH_TO_LABELS)
+categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=NUM_CLASSES, use_display_name=True)
+category_index = label_map_util.create_category_index(categories)
+
+# had planned on using this to skip message when processing
+# it turns out this is single threadded, so it won't work -- yet!
+NotProcessing = True
+
+# IoT Edge Module variables
+urlKey = "imageURL"
+
+# how long we keep older files in seconds
+keepImageFiles = 1200   # twenty minutes
+
+def removeOldFiles():
+    for f in os.listdir("."):
+        if ".jpg" in f:
+            fullpath = os.path.join(".", f)
+            if os.stat(fullpath).st_mtime < (time.time() - keepImageFiles):
+                if os.path.isfile(fullpath):
+                    os.remove(fullpath)
+
+def load_image_into_numpy_array(image):
+  (im_width, im_height) = image.size
+  return np.array(image.getdata()).reshape(
+      (im_height, im_width, 3)).astype(np.uint8)
+
+def detect_single_image(image, graph):
+  start = datetime.datetime.now()
+  with graph.as_default():
+    with tf.Session() as sess:
+      # Get handles to input and output tensors
+      ops = tf.get_default_graph().get_operations()
+      all_tensor_names = {output.name for op in ops for output in op.outputs}
+      tensor_dict = {}
+      for key in [
+          'num_detections', 'detection_boxes', 'detection_scores',
+          'detection_classes', 'detection_masks'
+      ]:
+        tensor_name = key + ':0'
+        if tensor_name in all_tensor_names:
+          tensor_dict[key] = tf.get_default_graph().get_tensor_by_name(
+              tensor_name)
+      if 'detection_masks' in tensor_dict:
+        # The following processing is only for single image
+        detection_boxes = tf.squeeze(tensor_dict['detection_boxes'], [0])
+        detection_masks = tf.squeeze(tensor_dict['detection_masks'], [0])
+        # Reframe is required to translate mask from box coordinates to image coordinates and fit the image size.
+        real_num_detection = tf.cast(tensor_dict['num_detections'][0], tf.int32)
+        detection_boxes = tf.slice(detection_boxes, [0, 0], [real_num_detection, -1])
+        detection_masks = tf.slice(detection_masks, [0, 0, 0], [real_num_detection, -1, -1])
+        detection_masks_reframed = utils_ops.reframe_box_masks_to_image_masks(
+            detection_masks, detection_boxes, image.shape[0], image.shape[1])
+        detection_masks_reframed = tf.cast(tf.greater(detection_masks_reframed, 0.1), tf.uint8)
+        # Follow the convention by adding back the batch dimension
+        tensor_dict['detection_masks'] = tf.expand_dims(detection_masks_reframed, 0)
+      image_tensor = tf.get_default_graph().get_tensor_by_name('image_tensor:0')
+
+      # Run inference
+      output_dict = sess.run(tensor_dict,feed_dict={image_tensor: np.expand_dims(image, 0)})
+
+      # all outputs are float32 numpy arrays, so convert types as appropriate
+      output_dict['num_detections'] = int(output_dict['num_detections'][0])
+      output_dict['detection_classes'] = output_dict['detection_classes'][0].astype(np.uint8)
+      output_dict['detection_boxes'] = output_dict['detection_boxes'][0]
+      output_dict['detection_scores'] = output_dict['detection_scores'][0]
+      if 'detection_masks' in output_dict:
+        output_dict['detection_masks'] = output_dict['detection_masks'][0]
+        
+      jsonMessage = {}
+      classes = output_dict['detection_classes']
+      scores = output_dict['detection_scores']
+      counter = 0
+      realDetections = 0
+      while (counter < output_dict['num_detections']):
+#          jsonMessage.append({'name': categories[classes[counter]-1]['name'], 'score': float(scores[counter])})
+#          print(classes)
+#          print(scores)
+#          print(categories)
+#          print(counter)
+          if float(scores[counter]) > minScore:
+            jsonMessage[categories[classes[counter]-1]['name']] = float(scores[counter])
+            realDetections = realDetections + 1
+          counter = counter + 1
+   
+      output_dict['num_detections'] = realDetections
+
+      vis_util.visualize_boxes_and_labels_on_image_array(
+        image,
+        output_dict['detection_boxes'],
+        output_dict['detection_classes'],
+        output_dict['detection_scores'],
+        category_index,
+        instance_masks=output_dict.get('detection_masks'),
+        use_normalized_coordinates=True,
+        line_thickness=8,
+        min_score_thresh=minScore)
+
+      filename = str(time.strftime('%Y-%m-%d-%H-%M-%S') +'-image.jpg')
+      imageio.imwrite("current.jpg", image)
+      imageio.imwrite(filename, image)
+      output_dict['fileName'] = filename
+  return jsonMessage, output_dict, int((datetime.datetime.now() - start).total_seconds() * 1000)
+
+def startWebService():
+    Handler = SimpleHTTPServer.SimpleHTTPRequestHandler
+    httpd = SocketServer.TCPServer(("", WebServicePort), Handler)
+
+    print ("Listening for remote connections on port: ", WebServicePort)
+    httpd.serve_forever()
+
+# Callback received when the message that we're forwarding is processed.
+def send_confirmation_callback(message, result, user_context):
+    global SEND_CALLBACKS
+    #print ( "Confirmation[%d] received for message with result = %s" % (user_context, result) )
+    map_properties = message.properties()
+    key_value_pair = map_properties.get_internals()
+    #print ( "    Properties: %s" % key_value_pair )
+    SEND_CALLBACKS += 1
+    #print ( "    Total calls confirmed: %d" % SEND_CALLBACKS )
+
+def send_reported_state_callback(status_code, user_context):
+    global SEND_REPORTED_STATE_CALLBACKS
+    print ( "Confirmation for reported state received with:\nstatus_code = [%d]\ncontext = %s" % (status_code, user_context) )
+    SEND_REPORTED_STATE_CALLBACKS += 1
+    print ( "    Total calls confirmed: %d" % SEND_REPORTED_STATE_CALLBACKS )
+
+# device_twin_callback is invoked when twin's desired properties are updated.
+def module_twin_callback(update_state, payload, user_context):
+    global TWIN_CALLBACKS
+    print ( "\nTwin callback called with:\nupdateStatus = %s\npayload = %s\n" % (update_state, payload) )
+    TWIN_CALLBACKS += 1
+    print ( "Total calls confirmed: %d\n" % TWIN_CALLBACKS )
+
+# receive_message_callback is invoked when an incoming message arrives on the specified 
+# input queue (in the case of this sample, "input1").  Because this is a filter module, 
+# we will forward this message onto the "output1" queue.
+def receive_message_callback(message, hubManager):
+    global RECEIVE_CALLBACKS, MESSAGECOUNTER, NotProcessing
+    message_buffer = message.get_bytearray()
+    size = len(message_buffer)
+    removeOldFiles()
+
+    IOTMessageAll = json.loads(message_buffer[:size].decode('utf-8'))
+    # if a list (Stream sent us a list of stuff)
+    if type(IOTMessageAll) is list:
+        IOTMessage = IOTMessageAll[0]
+    else:
+        IOTMessage = IOTMessageAll
+
+    IOTMessage['Predicted'] = False
+
+    if IOTMessage.has_key(urlKey) == True and NotProcessing:
+        try:
+#        while True:
+            NotProcessing = False
+            myIP = socket.gethostbyname(socket.gethostname())
+            #myIP = "edgebox.saye.org"
+            print ("working on: ", IOTMessage[urlKey])
+            image = Image.open(urlopen(IOTMessage[urlKey]))
+            image_np = load_image_into_numpy_array(image)
+            jsonMessage, output_dict, inferenceTime = detect_single_image(image_np, detection_graph)
+            IOTMessage['Predicted'] = True
+            IOTMessage['ObjectDetectionTimeMS'] = inferenceTime
+            IOTMessage['ObjectDetections'] = json.loads(json.dumps(jsonMessage))
+            IOTMessage['ObjectsDetected'] = output_dict['num_detections']
+            IOTMessage['Classes'] = NUM_CLASSES
+            IOTMessage['GraphFile'] = PATH_TO_CKPT
+            IOTMessage['ObjectDetectionURL'] = str("http://" + myIP + ":" + str(WebServicePort) + "/" + output_dict['fileName'])
+
+            # sending this message on to the next module
+            newIOTmessage = IoTHubMessage(bytearray(json.dumps(IOTMessage), 'utf8'))
+            hubManager.forward_event_to_output("output1", newIOTmessage, MESSAGECOUNTER)
+            print ("MessageId: [", MESSAGECOUNTER, "] ",json.dumps(IOTMessage))
+            MESSAGECOUNTER += 1
+        except:
+            e = sys.exc_info()[0]
+            print ( "Unexpected error with prediction: %s" % e )
+        NotProcessing = True
+    elif IOTMessage.has_key(urlKey) == True:
+        print ("skipping: ", IOTMessage[urlKey], " already processing an image")
+    else:
+        print ("skipping message, no ", IOTMessage[urlKey], " in messsage")
+
+    return IoTHubMessageDispositionResult.ACCEPTED
+
+class HubManager(object):
+
+    def __init__(
+            self,
+            protocol=IoTHubTransportProvider.MQTT):
+        self.client_protocol = protocol
+        self.client = IoTHubModuleClient()
+        self.client.create_from_environment(protocol)
+
+        # set the time until a message times out
+        self.client.set_option("messageTimeout", MESSAGE_TIMEOUT)
+        
+        # sets the callback when a message arrives on "input1" queue.  Messages sent to 
+        # other inputs or to the default will be silently discarded.
+        self.client.set_message_callback("input1", receive_message_callback, self)
+        self.client.set_module_twin_callback(module_twin_callback, self)
+
+        # start the background web service
+        thread.start_new_thread(startWebService, ())
+
+    # Forwards the message received onto the next stage in the process.
+    def forward_event_to_output(self, outputQueueName, event, send_context):
+        self.client.send_event_async(
+            outputQueueName, event, send_confirmation_callback, send_context)
+
+    def send_reported_state(self, reported_state, size, send_context):
+        self.client.send_reported_state(
+            reported_state, size, send_reported_state_callback, send_context)
+
+def main(protocol):
+    try:
+        print ( "\nPython %s\n" % sys.version )
+        if not os.path.exists(MODEL_FILE):
+          print ( "Downloading and unzipping:" + DOWNLOAD_BASE + MODEL_FILE)
+          opener = urllib.request.URLopener()
+          opener.retrieve(DOWNLOAD_BASE + MODEL_FILE, MODEL_FILE)
+        tar_file = tarfile.open(MODEL_FILE)
+        for file in tar_file.getmembers():
+            file_name = os.path.basename(file.name)
+            if 'frozen_inference_graph.pb' in file_name:
+              tar_file.extract(file, os.getcwd())
+        print ( "Download complete.")
+
+        print ( "Loading frozen graph %s into memory" % PATH_TO_CKPT)
+        with detection_graph.as_default():
+            od_graph_def = tf.GraphDef()
+            with tf.gfile.GFile(PATH_TO_CKPT, 'rb') as fid:
+                serialized_graph = fid.read()
+                od_graph_def.ParseFromString(serialized_graph)
+                tf.import_graph_def(od_graph_def, name='')
+
+        print ( "loading the categories and index" )
+        label_map = label_map_util.load_labelmap(PATH_TO_LABELS)
+        #        NUM_CLASSES (how to derive this)
+        categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=NUM_CLASSES, use_display_name=True)
+        category_index = label_map_util.create_category_index(categories)
+
+        print ( "IoT Edge Module, waiting for a JSON message with the key '%s'" % urlKey)
+
+        hub_manager = HubManager(protocol)
+
+        reported_stateJSON = {}
+        reported_stateJSON["CKPT_SOURCE"] = DOWNLOAD_BASE + MODEL_FILE
+        reported_stateJSON["PATH_TO_CKPT"] = PATH_TO_CKPT
+        reported_stateJSON["CKPT_SIZE"] = os.path.getsize(PATH_TO_CKPT)
+        reported_stateJSON["PATH_TO_LABELS"] = PATH_TO_LABELS
+        reported_stateJSON["NUM_CLASSES"] = NUM_CLASSES
+        reported_state = json.dumps(reported_stateJSON)
+        hub_manager.send_reported_state(reported_state, len(reported_state), SEND_REPORTED_STATE_CALLBACKS)
+
+        while True:
+            time.sleep(1000)
+
+    except IoTHubError as iothub_error:
+        print ( "Unexpected error %s from IoTHub" % iothub_error )
+        return
+    except KeyboardInterrupt:
+        print ( "IoTHubModuleClient sample stopped" )
+
+if __name__ == '__main__':
+    main(PROTOCOL)
