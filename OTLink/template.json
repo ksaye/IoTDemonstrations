@@ -1,0 +1,150 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "ApplicationName" :{
+            "defaultValue": "[uniqueString('HPEOTLink']",
+            "type": "String",
+            "metadata": {
+              "description": "Unique Application Name, no spaces or special characters"
+            }
+    },
+    "variables": {
+        "iotHubName": "[concat[parameters('ApplicationName'),'-iothub')]",
+        "iotHubSKU": "S1",
+        "streamTelemetryJobName": "[concat[parameters('ApplicationName'),'-stream-telemetry')]",
+        "storageAccountName": "[lower(concat[parameters('ApplicationName'),'storageaccount'))]"   
+    },
+    "resources": [
+        {
+            "comments": "Creating the Storage Accoung",
+            "type": "Microsoft.Storage/storageAccounts",
+            "sku": {
+                "name": "Standard_RAGRS",
+                "tier": "Standard"
+            },
+            "kind": "StorageV2",
+            "name": "[variables('storageAccountName')]",
+            "apiVersion": "2018-07-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "scale": null,
+            "properties": {
+                "networkAcls": {
+                    "bypass": "AzureServices",
+                    "virtualNetworkRules": [],
+                    "ipRules": [],
+                    "defaultAction": "Allow"
+                },
+                "supportsHttpsTrafficOnly": true,
+                "encryption": {
+                    "services": {
+                        "file": {
+                            "enabled": true
+                        },
+                        "blob": {
+                            "enabled": true
+                        }
+                    },
+                    "keySource": "Microsoft.Storage"
+                },
+                "accessTier": "Hot"
+            },
+            "dependsOn": []
+        },
+        {
+            "comments": "Creating the IoT Hub",
+            "type": "Microsoft.Devices/IotHubs",
+            "sku": {
+                "name": "[variables('iotHubSKU')]",
+                "tier": "Standard",
+                "capacity": 1
+            },
+            "name": "[variables('iotHubName')]",
+            "apiVersion": "2018-04-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "scale": null,
+            "properties": {
+                "operationsMonitoringProperties": {
+                    "events": {
+                        "None": "None",
+                        "Connections": "None",
+                        "DeviceTelemetry": "None",
+                        "C2DCommands": "None",
+                        "DeviceIdentityOperations": "None",
+                        "FileUploadOperations": "None",
+                        "Routes": "None"
+                    }
+                },
+                "ipFilterRules": [],
+                "eventHubEndpoints": {
+                    "events": {
+                        "retentionTimeInDays": 1,
+                        "partitionCount": 4
+                    },
+                    "operationsMonitoringEvents": {
+                        "retentionTimeInDays": 1,
+                        "partitionCount": 4
+                    }
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "comments": "Creating the Stream Analytics Telemetry Job",
+            "type": "Microsoft.StreamAnalytics/streamingjobs",
+            "name": "[variables('streamTelemetryJobName')]",
+            "apiVersion": "2016-03-01",
+            "location": "[resourceGroup().location]",
+            "scale": null,
+            "properties": {
+                "sku": {
+                    "name": "Standard"
+                },
+                "eventsOutOfOrderPolicy": "Adjust",
+                "outputErrorPolicy": "Stop",
+                "eventsOutOfOrderMaxDelayInSeconds": 0,
+                "eventsLateArrivalMaxDelayInSeconds": 5,
+                "dataLocale": "en-US",
+                "compatibilityLevel": "1.0",
+                "streamingUnits": 1,
+                "query": "SELECT\r\n    *\r\nINTO\r\n    [YourOutputAlias]\r\nFROM\r\n    [YourInputAlias]"
+            },
+            "dependsOn": []
+        },
+        {
+            "comments": "Stream Input",
+            "type": "Microsoft.StreamAnalytics/streamingjobs/inputs",
+            "name": "[concat(variables('streamTelemetryJobName'), '/azureiothub)]",
+            "apiVersion": "2016-03-01",
+            "scale": null,
+            "properties": {
+                "type": "Stream",
+                "datasource": {
+                    "type": "Microsoft.Devices/IotHubs",
+                    "properties": {
+                        "iotHubNamespace": "deploytemplate",
+                        "sharedAccessPolicyName": "iothubowner",
+                        "endpoint": "messages/events",
+                        "consumerGroupName": "$Default"
+                    }
+                },
+                "compression": {
+                    "type": "None"
+                },
+                "serialization": {
+                    "type": "Json",
+                    "properties": {
+                        "encoding": "UTF8"
+                    }
+                },
+                "etag": "3f01b8e8-859b-46ac-a983-9e762b069430"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.StreamAnalytics/streamingjobs', variables('streamTelemetryJobName'))]"
+            ]
+        }
+    ]
+    }
+}
