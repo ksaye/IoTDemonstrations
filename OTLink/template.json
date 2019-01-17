@@ -3,7 +3,7 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "ApplicationName" :{
-            "defaultValue": "[uniqueString('HPEOTLink']",
+            "defaultValue": "[uniqueString('HPEOTLink')]",
             "type": "string",
             "metadata": {
               "description": "Unique Application Name, no spaces or special characters"
