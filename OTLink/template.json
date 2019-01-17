@@ -4,7 +4,7 @@
     "parameters": {
         "ApplicationName" :{
             "defaultValue": "[uniqueString('HPEOTLink']",
-            "type": "String",
+            "type": "string",
             "metadata": {
               "description": "Unique Application Name, no spaces or special characters"
             }
