@@ -10,120 +10,13 @@
         }
   },
   "variables": {
-    "image": "[parameters('navRelease')]",
-    "publicdnsname": "[concat(parameters('dnsPrefix'),'.',parameters('location'),parameters('azurecontainerSuffix'))]"
   },
   "resources": [
-    {
-      "name": "[parameters('contGroupName')]",
-      "type": "Microsoft.ContainerInstance/containerGroups",
-      "apiVersion": "2018-02-01-preview",
-      "location": "[parameters('location')]",
-      "properties": {
-        "containers": [
-          {
-            "name": "[parameters('contGroupName')]",
-            "properties": {
-              "environmentVariables": [
-                {
-                  "name": "ACCEPT_EULA",
-                  "value": "[parameters('acceptEula')]"
-                },
-                {
-                  "name": "username",
-                  "value": "[parameters('username')]"
-                },
-                {
-                  "name": "password",
-                  "value": "[parameters('password')]"
-                },
-                {
-                  "name": "customNavSettings",
-                  "value": "[parameters('customNavSettings')]"
-                },
-                {
-                  "name": "customWebSettings",
-                  "value": "[parameters('customWebSettings')]"
-                },
-                { 
-                  "name": "PublicDnsName",
-                  "value": "[variables('publicdnsname')]"
-                },
-                {
-                  "name": "folders",
-                  "value": "[concat('c:\\run\\my=', uri(parameters('_artifactsLocation'), concat('scripts/SetupCertificate.zip', parameters('_artifactsLocationSasToken'))))]"
-                },
-                {
-                  "name": "ContactEMailForLetsEncrypt",
-                  "value": "[parameters('letsEncryptMail')]"
-                }
-              ],
-              "image": "[variables('image')]",
-              "ports": [
-                {
-                  "protocol": "TCP",
-                  "port": 443
-                },
-                {
-                  "protocol": "TCP",
-                  "port": 8080
-                },
-                {
-                  "protocol": "TCP",
-                  "port": 7049
-                },
-                {
-                  "protocol": "TCP",
-                  "port": 7048
-                },
-                {
-                  "protocol": "TCP",
-                  "port": 80
-                }
-              ],
-              "resources": {
-                "requests": {
-                  "cpu": "[parameters('cpuCores')]",
-                  "memoryInGB": "[parameters('memoryInGb')]"
-                }
-              }
-            }
-          }
-        ],
-        "osType": "Windows",
-        "ipAddress": {
-          "type": "Public",
-          "ports": [
-            {
-              "protocol": "TCP",
-              "port": 443
-            },
-            {
-              "protocol": "TCP",
-              "port": 8080
-            },
-            {
-              "protocol": "TCP",
-              "port": 7049
-            },
-            {
-              "protocol": "TCP",
-              "port": 7048
-            },
-            {
-              "protocol": "TCP",
-              "port": 80
-            }
-          ],
-          "dnsNameLabel": "[parameters('dnsPrefix')]"
-        }
-      }
-    }
-  ],
+    ],
   "outputs": {
     "containerIPAddressFqdn": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups/', parameters('contGroupName'))).ipAddress.fqdn]"
+      "value": "info"
     }
   }
 }
