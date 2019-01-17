@@ -1,13 +1,12 @@
 {
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
-  "parameters": {
-    "ApplicationName" :{
-        "defaultValue": "[uniqueString('HPEOTLink']",
-        "type": "string",
-        "metadata": {
-          "description": "Unique Application Name, no spaces or special characters"
-        }
+  "ApplicationName": {
+    "type": "string",
+    "metadata": {
+      "description": "Name for the container group"
+    },
+    "defaultValue": "acinavcontainergroup"
   },
   "variables": {
     "image": "[parameters('navRelease')]",
