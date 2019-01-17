@@ -2,115 +2,12 @@
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "contGroupName": {
-      "type": "string",
-      "metadata": {
-        "description": "Name for the container group"
-      },
-      "defaultValue": "acinavcontainergroup"
-    },
-    "dnsPrefix": {
-      "type": "string",
-      "maxLength": 50,
-      "metadata": {
-          "description": "The DNS label for the public IP address. It must be lowercase. It should match the following regular expression, or it will raise an error: ^[a-z][a-z0-9-]{1,61}[a-z0-9]$"
-      }
-    },
-    "letsEncryptMail": {
+    "ApplicationName" :{
+        "defaultValue": "[uniqueString('HPEOTLink']",
         "type": "string",
         "metadata": {
-            "description": "The eMail address to be used when requesting a Let's Encrypt certificate"
+          "description": "Unique Application Name, no spaces or special characters"
         }
-    },
-    "navRelease": {
-      "type": "string",
-      "metadata": {
-        "description": "Before the colon: dynamics-nav for NAV or bcsandbox for Business Central. After the colon: Identifier for the specific release like 2018-cu4-de for NAV or de for BC. Possible values can be found at https://hub.docker.com/r/microsoft/dynamics-nav/tags/ or https://hub.docker.com/r/microsoft/bcsandbox/tags/"
-      },
-      "defaultValue": "microsoft/bcsandbox:us"
-    },
-    "username": {
-      "type": "string",
-      "metadata": {
-        "description": "Username for your NAV super user"
-      }
-    },
-    "password": {
-      "type": "string",
-      "metadata": {
-        "description": "Password for your NAV/BC super user and your sa user on the database"
-      }
-    },
-    "cpuCores": {
-      "type": "string",
-      "metadata": {
-        "description": "The number of CPU cores to allocate to the container"
-      },
-      "defaultValue": "2.0"
-    },
-    "memoryInGb": {
-      "type": "string",
-      "metadata": {
-        "description": "The amount of memory to allocate to the container in gigabytes. Provide a minimum of 2 as he container will include SQL Server and NAV NST"
-      },
-      "defaultValue": "2.0"
-    },
-    "customNavSettings": {
-      "type": "string",
-      "metadata": {
-        "description": "Custom settings for the NAV / BC NST"
-      },
-      "defaultValue": ""
-    },
-    "customWebSettings": {
-      "type": "string",
-      "metadata": {
-        "description": "Custom settings for the Web Client"
-      },
-      "defaultValue": ""
-    },
-    "acceptEula": {
-      "type": "string",
-      "metadata": {
-        "description": "Change to 'Y' to accept the end user license agreement available at https://go.microsoft.com/fwlink/?linkid=861843. This is necessary to successfully run the container"
-      },
-      "defaultValue": "N",
-      "allowedValues": [
-        "Y",
-        "N"
-      ]
-    },
-    "azurecontainerSuffix": {
-      "type": "string",
-      "metadata": {
-        "description": "Please select the Azure container URL suffix for your current region. For the standard Azure cloud, this is azurecontainer.io"
-      },
-      "defaultValue": ".azurecontainer.io",
-      "allowedValues": [
-        ".azurecontainer.io"
-      ]
-    },
-    "location": {	
-      "type": "string",	
-      "defaultValue": "[resourceGroup().location]",	
-      "metadata": {	
-        "description": "Location for all resources."	
-      }
-    },
-    "_artifactsLocation": {
-          "type": "string",
-          "metadata": {
-              "description": "The base URI where artifacts required by this template are located including a trailing '/'"
-          },
-          "defaultValue": "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-aci-dynamicsnav/"
-      },
-      "_artifactsLocationSasToken": {
-          "type": "securestring",
-          "metadata": {
-              "description": "The sasToken required to access _artifactsLocation.  When the template is deployed using the accompanying scripts, a sasToken will be automatically generated. Use the defaultValue if the staging location is not secured."
-          },
-          "defaultValue": ""
-      }
   },
   "variables": {
     "image": "[parameters('navRelease')]",
