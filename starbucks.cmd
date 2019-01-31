@@ -71,6 +71,9 @@ if %ERRORLEVEL% == 0 (
 	type output.txt
 	pause)
 
+timeout /t 5 /nobreak && azsphere device restart
+	if NOT %ERRORLEVEL% == 0 ( goto errorH)
+
 timeout /t 5 /nobreak && azsphere device prep-field --devicegroupid %unique-dg-id% --skuid %unique-sku-id%
 	if NOT %ERRORLEVEL% == 0 ( goto errorH)
 
@@ -91,12 +94,12 @@ REM	azsphere dev img list-installed | find /I "lan-enc" && azsphere dev img list
 REM if we are here, we must have timed out
 goto errorH
 
-:endVerifyLoop
+echo Please unplug the board and plug in the new board.
 echo Waiting for the device to be unplugged.
+:endVerifyLoop
 azsphere dev show-attached > NULL
 	REM here we are waiting for an error -- meaning the board is unplugged
-	if %ERRORLEVEL% == 1 goto updateQA
-timeout /t 15 > NULL
+	if NOT %ERRORLEVEL% == 0 goto updateQA
 goto endVerifyLoop
 
 :errorH
