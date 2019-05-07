@@ -49,6 +49,7 @@ def send_confirmation_callback(message, result, user_context):
 # input queue (in the case of this sample, "input1").  Because this is a filter module, 
 # we will forward this message onto the "output1" queue.
 def receive_message_callback(message, hubManager):
+    # Not used for this Workshop
     global RECEIVE_CALLBACKS
     message_buffer = message.get_bytearray()
     size = len(message_buffer)
