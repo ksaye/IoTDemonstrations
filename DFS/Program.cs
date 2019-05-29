@@ -21,12 +21,14 @@ namespace RESTClient
         static string RESTTargetLocation = "Dallas";
         static int POLLINGInterval = 15;
         static WebRequest request;
+        static int counter;
 
         static void Main(string[] args)
         {
             Init().Wait();
 
             while (true) {
+                counter += 1;
                 Thread.Sleep(1000 * POLLINGInterval);
                 string messageToSend = getRESTResponse();
                 Console.WriteLine("Sending: " + messageToSend.ToString());
@@ -67,6 +69,7 @@ namespace RESTClient
                         JObject messageToSend = new JObject();
                         messageToSend["location"] = RESTResponse.name;
                         messageToSend["temperature"] = RESTResponse.main.temp;
+                        messageToSend["messagecounter"] = counter;
                         return messageToSend.ToString();
                     } catch (Exception e) {
                         Console.WriteLine("ERROR: " + e.ToString());
