@@ -19,7 +19,7 @@ namespace RESTClient
         static ModuleClient ioTHubModuleClient;
         static string RESTTargetURL = null;    // Example "http://192.168.15.150:8181/"
         static string RESTTargetLocation = "Dallas";
-        static int POLINGInterval = 15;
+        static int POLLINGInterval = 15;
         static WebRequest request;
 
         static void Main(string[] args)
@@ -27,7 +27,7 @@ namespace RESTClient
             Init().Wait();
 
             while (true) {
-                Thread.Sleep(1000 * POLINGInterval);
+                Thread.Sleep(1000 * POLLINGInterval);
                 string messageToSend = getRESTResponse();
                 Console.WriteLine("Sending: " + messageToSend.ToString());
                 Message iotMessage = new Message(Encoding.UTF8.GetBytes(messageToSend.ToString()));
@@ -48,7 +48,6 @@ namespace RESTClient
             // Open a connection to the Edge runtime
             ioTHubModuleClient = await ModuleClient.CreateFromEnvironmentAsync(settings);
             await ioTHubModuleClient.OpenAsync();
-            Console.WriteLine("IoT Hub module client initialized.");
 
             // register our default Method callback
             await ioTHubModuleClient.SetMethodDefaultHandlerAsync(MethodCallback, null);
@@ -91,15 +90,15 @@ namespace RESTClient
                 RESTTargetLocation = (string)desiredPropertiesPatch["RESTTargetLocation"];
             }
 
-            if (desiredPropertiesPatch.Contains("POLINGInterval"))
+            if (desiredPropertiesPatch.Contains("POLLINGInterval"))
             {
-                POLINGInterval = (int)desiredPropertiesPatch["POLINGInterval"];
+                POLLINGInterval = (int)desiredPropertiesPatch["POLLINGInterval"];
             }
 
             JObject twinResponse = new JObject();
             twinResponse["RESTTargetURL"] = RESTTargetURL;
             twinResponse["RESTTargetLocation"] = RESTTargetLocation;
-            twinResponse["POLINGInterval"] = POLINGInterval;
+            twinResponse["POLLINGInterval"] = POLLINGInterval;
             Console.WriteLine("Sending TWIN: " + twinResponse.ToString());
             TwinCollection patch = new TwinCollection(twinResponse.ToString());
             await ioTHubModuleClient.UpdateReportedPropertiesAsync(patch); // report back reported property.
