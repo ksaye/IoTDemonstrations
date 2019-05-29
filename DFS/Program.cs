@@ -62,6 +62,7 @@ namespace RESTClient
         static string getRESTResponse() {
             if (RESTTargetURL != null) {
                     request = WebRequest.Create(RESTTargetURL + "weather?location=" + RESTTargetLocation);
+                    string returnedError;
                     try {
                         HttpWebResponse response = (HttpWebResponse)request.GetResponse();
                         StreamReader reader = new StreamReader(response.GetResponseStream());
@@ -73,11 +74,14 @@ namespace RESTClient
                         return messageToSend.ToString();
                     } catch (Exception e) {
                         Console.WriteLine("ERROR: " + e.ToString());
+                        returnedError = e.ToString();
                     } 
-                    return "{}";
+                    return "{\"messagecounter\":" + counter.ToString() + 
+                        ", \"Error\":" + returnedError + counter.ToString() + "}";
                 } else {
                     Console.WriteLine("ERROR: TWIN RESTTargetURL not set.");
-                    return "{}";
+                    return "{\"messagecounter\"" + counter.ToString() +
+                    ", \"ERROR\": \"TWIN RESTTargetURL not set.\"}";
                 }
         }
 
