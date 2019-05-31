@@ -53,9 +53,13 @@ namespace RESTClient
 
             // register our default Method callback
             await ioTHubModuleClient.SetMethodDefaultHandlerAsync(MethodCallback, null);
+           
+            // get our first TWIN update
+            var moduleTwin = await ioTHubModuleClient.GetTwinAsync();
+            await OnDesiredPropertiesUpdate(moduleTwin.Properties.Desired, ioTHubModuleClient);
 
-            // register our TWIN callback
-            await ioTHubModuleClient.SetDesiredPropertyUpdateCallbackAsync(OnDesiredPropertiesUpdated, 
+            // register our TWIN callback for updates
+            await ioTHubModuleClient.SetDesiredPropertyUpdateCallbackAsync(OnDesiredPropertiesUpdate, 
                 ioTHubModuleClient);
         }
 
@@ -85,30 +89,34 @@ namespace RESTClient
                 }
         }
 
-        static async Task OnDesiredPropertiesUpdated(TwinCollection desiredPropertiesPatch, object userContext)
+        static Task OnDesiredPropertiesUpdate(TwinCollection desiredProperties, object userContext)
         {
-            if (desiredPropertiesPatch.Contains("RESTTargetURL"))
+            Console.WriteLine("Received TWIN: " + desiredProperties.ToString());
+            if (desiredProperties.Contains("RESTTargetURL"))
             {
-                RESTTargetURL = (string)desiredPropertiesPatch["RESTTargetURL"];
+                RESTTargetURL = (string)desiredProperties["RESTTargetURL"];
             }
 
-            if (desiredPropertiesPatch.Contains("RESTTargetLocation"))
+            if (desiredProperties.Contains("RESTTargetLocation"))
             {
-                RESTTargetLocation = (string)desiredPropertiesPatch["RESTTargetLocation"];
+                RESTTargetLocation = (string)desiredProperties["RESTTargetLocation"];
             }
 
-            if (desiredPropertiesPatch.Contains("POLLINGInterval"))
+            if (desiredProperties.Contains("POLLINGInterval"))
             {
-                POLLINGInterval = (int)desiredPropertiesPatch["POLLINGInterval"];
+                POLLINGInterval = (int)desiredProperties["POLLINGInterval"];
             }
 
+            // also reporting our Reported properties
             JObject twinResponse = new JObject();
             twinResponse["RESTTargetURL"] = RESTTargetURL;
             twinResponse["RESTTargetLocation"] = RESTTargetLocation;
             twinResponse["POLLINGInterval"] = POLLINGInterval;
             Console.WriteLine("Sending TWIN: " + twinResponse.ToString());
             TwinCollection patch = new TwinCollection(twinResponse.ToString());
-            await ioTHubModuleClient.UpdateReportedPropertiesAsync(patch); // report back reported property.
+            ioTHubModuleClient.UpdateReportedPropertiesAsync(patch);
+            
+            return Task.CompletedTask;
         }
 
         static Task<MethodResponse> MethodCallback(MethodRequest methodRequest, object userContext)
