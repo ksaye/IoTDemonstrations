@@ -37,9 +37,9 @@ namespace modbusclient
                 dynamic messageToSend = new JObject();
                 try 
                 {
+                    Thread.Sleep(1000 * POLLINGfrequency);
                     modbusClient = new ModbusClient(POLLINGHost, 502);
                     await modbusClient.Connect();
-                    Thread.Sleep(1000 * POLLINGfrequency);
                     counter += 1;
                     messageToSend["messagecounter"] = counter;
                     messageToSend["POLLINGHost"] = POLLINGHost;
