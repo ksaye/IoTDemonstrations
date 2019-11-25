@@ -1,0 +1,16 @@
+# based on content from: https://redislabs.com/ebook/appendix-a/a-3-installing-on-windows/a-3-2-installing-redis-on-window/
+FROM mcr.microsoft.com/dotnet/core/runtime:2.1.13-nanoserver-1809
+
+# running in one like to keep the layer and size down
+RUN mkdir c:\redis && cd c:\redis && \
+    curl.exe -o redis-2.4.5-win32-win64.zip -L https://github.com/downloads/dmajkic/redis/redis-2.4.5-win32-win64.zip && \
+    tar.exe -xf c:\redis\redis-2.4.5-win32-win64.zip -C c:\redis && \
+    DEL redis-2.4.5-win32-win64.zip
+ 
+# in case you have a specifig conf file you need
+#COPY redis.conf C:\redis\64bit
+ 
+# the default port
+EXPOSE 6379
+ 
+ENTRYPOINT  C:\redis\64bit\redis-server.exe
