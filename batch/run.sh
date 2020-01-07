@@ -5,6 +5,11 @@ sudo rm -f -r /mnt/intel9
 sudo mkdir -p /mnt/intel9/source
 sudo chown _azbatch:_azbatchgrp /mnt/intel9
 
+ls -all /mnt/intel9
+ls -all /mnt/intel9/source
+echo . > /mnt/intel9/source/test.txt
+ls -all /mnt/intel9/source
+
 # script
 cd /mnt/intel9/source
 rm -f -r *
