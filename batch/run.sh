@@ -3,7 +3,7 @@ sudo apt update
 sudo apt-get install -y gawk wget git-core diffstat unzip texinfo gcc-multilib build-essential chrpath socat cpio python python3 python3-pip python3-pexpect xz-utils debianutils iputils-ping python3-git python3-jinja2 libegl1-mesa libsdl1.2-dev xterm locales
 sudo rm -f -r /mnt/intel9
 sudo mkdir -p /mnt/intel9/source
-sudo chown _azbatch:_azbatchgrp /mnt/intel9
+sudo chown -R _azbatch:_azbatchgrp /mnt/intel9
 
 ls -all /mnt/intel9
 ls -all /mnt/intel9/source
