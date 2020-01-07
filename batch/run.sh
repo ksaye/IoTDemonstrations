@@ -2,21 +2,25 @@
 sudo apt update
 sudo apt-get install -y gawk wget git-core diffstat unzip texinfo gcc-multilib build-essential chrpath socat cpio python python3 python3-pip python3-pexpect xz-utils debianutils iputils-ping python3-git python3-jinja2 libegl1-mesa libsdl1.2-dev xterm locales
 
-sudo mkdir -p /mnt/intel9/source
-sudo chown -R _azbatchtask_19:_azbatchgrp /mnt/intel9
+USERGROUP=`id -gn`
+BUILD=warrior
+MACHINETYPE=intel-corei7-64
+
+sudo mkdir -p /mnt/yocto/source
+sudo chown -R $USER:$USERGROUP /mnt/yocto
 
 # script
-cd /mnt/intel9/source
+cd /mnt/yocto/source
 rm -f -r *
 sudo locale-gen en_US.UTF-8
 
-git clone -b warrior http://git.yoctoproject.org/git/poky
-git clone -b warrior http://git.yoctoproject.org/git/meta-intel
-git clone -b warrior https://github.com/Azure/meta-iotedge.git
-git clone -b warrior git://git.yoctoproject.org/meta-security
+git clone -b $BUILD http://git.yoctoproject.org/git/poky
+git clone -b $BUILD http://git.yoctoproject.org/git/meta-intel
+git clone -b $BUILD https://github.com/Azure/meta-iotedge.git
+git clone -b $BUILD git://git.yoctoproject.org/meta-security
 
 # adding iotedge stuff
-git clone -b warrior git://git.yoctoproject.org/meta-virtualization
+git clone -b $BUILD git://git.yoctoproject.org/meta-virtualization
 
 git clone -b master git://github.com/meta-rust/meta-rust.git
 # note RUST has been updated to version 1.37.x+, which is incompatible
@@ -25,44 +29,44 @@ cd meta-rust
 git checkout 9487b089ea4779c2b494b17b9254219226efa539
 cd ..
 
-git clone -b warrior git://git.openembedded.org/meta-openembedded
+git clone -b $BUILD git://git.openembedded.org/meta-openembedded
 
-cd /mnt/intel9
-source source/poky/oe-init-build-env intel9
-cd /mnt/intel9
-echo "BBLAYERS += \"/mnt/intel9/source/meta-intel\"" >> intel9/conf/bblayers.conf
-echo "BBLAYERS += \"/mnt/intel9/source/meta-rust\"" >> intel9/conf/bblayers.conf
-echo "BBLAYERS += \"/mnt/intel9/source/meta-virtualization\"" >> intel9/conf/bblayers.conf
-echo "BBLAYERS += \"/mnt/intel9/source/meta-iotedge\"" >> intel9/conf/bblayers.conf
-echo "BBLAYERS += \"/mnt/intel9/source/meta-openembedded/meta-oe\"" >> intel9/conf/bblayers.conf
-echo "BBLAYERS += \"/mnt/intel9/source/meta-openembedded/meta-networking\"" >> intel9/conf/bblayers.conf
-echo "BBLAYERS += \"/mnt/intel9/source/meta-openembedded/meta-python\"" >> intel9/conf/bblayers.conf
-echo "BBLAYERS += \"/mnt/intel9/source/meta-openembedded/meta-perl\"" >> intel9/conf/bblayers.conf
-echo "BBLAYERS += \"/mnt/intel9/source/meta-openembedded/meta-filesystems\"" >> intel9/conf/bblayers.conf
-echo "BBLAYERS += \"/mnt/intel9/source/meta-security\"" >> intel9/conf/bblayers.conf
-echo "BBLAYERS += \"/mnt/intel9/source/meta-security/meta-tpm\"" >> intel9/conf/bblayers.conf
-echo "BBLAYERS_NON_REMOVABLE += \"/mnt/intel9/source/poky/meta-iotedge\"" >> intel9/conf/bblayers.conf
+cd /mnt/yocto
+source source/poky/oe-init-build-env yocto
+cd /mnt/yocto
+echo "BBLAYERS += \"/mnt/yocto/source/meta-intel\"" >> yocto/conf/bblayers.conf
+echo "BBLAYERS += \"/mnt/yocto/source/meta-rust\"" >> yocto/conf/bblayers.conf
+echo "BBLAYERS += \"/mnt/yocto/source/meta-virtualization\"" >> yocto/conf/bblayers.conf
+echo "BBLAYERS += \"/mnt/yocto/source/meta-iotedge\"" >> yocto/conf/bblayers.conf
+echo "BBLAYERS += \"/mnt/yocto/source/meta-openembedded/meta-oe\"" >> yocto/conf/bblayers.conf
+echo "BBLAYERS += \"/mnt/yocto/source/meta-openembedded/meta-networking\"" >> yocto/conf/bblayers.conf
+echo "BBLAYERS += \"/mnt/yocto/source/meta-openembedded/meta-python\"" >> yocto/conf/bblayers.conf
+echo "BBLAYERS += \"/mnt/yocto/source/meta-openembedded/meta-perl\"" >> yocto/conf/bblayers.conf
+echo "BBLAYERS += \"/mnt/yocto/source/meta-openembedded/meta-filesystems\"" >> yocto/conf/bblayers.conf
+echo "BBLAYERS += \"/mnt/yocto/source/meta-security\"" >> yocto/conf/bblayers.conf
+echo "BBLAYERS += \"/mnt/yocto/source/meta-security/meta-tpm\"" >> yocto/conf/bblayers.conf
+echo "BBLAYERS_NON_REMOVABLE += \"/mnt/yocto/source/poky/meta-iotedge\"" >> yocto/conf/bblayers.conf
 
-echo "MACHINE = \"intel-corei7-64\"" >> intel9/conf/local.conf
-echo 'DISTRO_FEATURES_append += " systemd wifi virtualization"' >> intel9/conf/local.conf
-echo 'EXTRA_IMAGE_FEATURES += "debug-tweaks ssh-server-dropbear tools-debug tools-sdk"' >> intel9/conf/local.conf
-echo 'IMAGE_INSTALL_append += " iotedge-daemon "' >> intel9/conf/local.conf
-echo 'IMAGE_INSTALL_append += " iotedge-cli "' >> intel9/conf/local.conf
-echo 'IMAGE_INSTALL_append += " docker-ce "' >> intel9/conf/local.conf
-echo 'IMAGE_INSTALL_append += " tpm2-tools "' >> intel9/conf/local.conf
-echo 'IMAGE_INSTALL_append += " tpm2-tss "' >> intel9/conf/local.conf
-echo 'IMAGE_INSTALL_append += " ca-certificates "' >> intel9/conf/local.conf
-echo 'IMAGE_INSTALL_append += " iw "' >> intel9/conf/local.conf
-echo 'IMAGE_INSTALL_append += " connman "' >> intel9/conf/local.conf
-echo 'IMAGE_INSTALL_append += " connman-client "' >> intel9/conf/local.conf
-echo 'VIRTUAL-RUNTIME_init_manager = "systemd"' >> intel9/conf/local.conf
-echo 'DISTRO_FEATURES_BACKFILL_CONSIDERED = "sysvinit"' >> intel9/conf/local.conf
-echo 'VIRTUAL-RUNTIME_initscripts = ""' >> intel9/conf/local.conf
-echo 'PACKAGECONFIG_append_pn-qemu-native = " sdl"' >> intel9/conf/local.conf
-echo 'PACKAGECONFIG_append_pn-nativesdk-qemu = " sdl"' >> intel9/conf/local.conf
+echo "MACHINE = \"$MACHINETYPE\"" >> yocto/conf/local.conf
+echo 'DISTRO_FEATURES_append += " systemd wifi virtualization"' >> yocto/conf/local.conf
+echo 'EXTRA_IMAGE_FEATURES += "debug-tweaks ssh-server-dropbear tools-debug tools-sdk"' >> yocto/conf/local.conf
+echo 'IMAGE_INSTALL_append += " iotedge-daemon "' >> yocto/conf/local.conf
+echo 'IMAGE_INSTALL_append += " iotedge-cli "' >> yocto/conf/local.conf
+echo 'IMAGE_INSTALL_append += " docker-ce "' >> yocto/conf/local.conf
+echo 'IMAGE_INSTALL_append += " tpm2-tools "' >> yocto/conf/local.conf
+echo 'IMAGE_INSTALL_append += " tpm2-tss "' >> yocto/conf/local.conf
+echo 'IMAGE_INSTALL_append += " ca-certificates "' >> yocto/conf/local.conf
+echo 'IMAGE_INSTALL_append += " iw "' >> yocto/conf/local.conf
+echo 'IMAGE_INSTALL_append += " connman "' >> yocto/conf/local.conf
+echo 'IMAGE_INSTALL_append += " connman-client "' >> yocto/conf/local.conf
+echo 'VIRTUAL-RUNTIME_init_manager = "systemd"' >> yocto/conf/local.conf
+echo 'DISTRO_FEATURES_BACKFILL_CONSIDERED = "sysvinit"' >> yocto/conf/local.conf
+echo 'VIRTUAL-RUNTIME_initscripts = ""' >> yocto/conf/local.conf
+echo 'PACKAGECONFIG_append_pn-qemu-native = " sdl"' >> yocto/conf/local.conf
+echo 'PACKAGECONFIG_append_pn-nativesdk-qemu = " sdl"' >> yocto/conf/local.conf
 
 bitbake core-image-sato
 
-ls -all -h /mnt/intel9/intel9/tmp/deploy/images/intel-corei7-64
+ls -all -h /mnt/yocto/yocto/tmp/deploy/images/intel-corei7-64
 
 # how to copy the hdd file and etc
