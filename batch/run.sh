@@ -6,12 +6,12 @@ USERGROUP=`id -gn`
 BUILD=warrior
 MACHINETYPE=intel-corei7-64
 
+sudo rm -f -r /mnt/yocto
 sudo mkdir -p /mnt/yocto/source
 sudo chown -R $USER:$USERGROUP /mnt/yocto
 
 # script
 cd /mnt/yocto/source
-rm -f -r *
 sudo locale-gen en_US.UTF-8
 sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
