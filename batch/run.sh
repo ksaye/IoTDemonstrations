@@ -10,6 +10,8 @@ sudo rm -f -r /mnt/yocto
 sudo mkdir -p /mnt/yocto/source
 sudo chown -R $USER:$USERGROUP /mnt/yocto
 
+echo Building $BUILD
+
 # script
 cd /mnt/yocto/source
 sudo locale-gen en_US.UTF-8
