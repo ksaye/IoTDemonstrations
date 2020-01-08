@@ -101,7 +101,7 @@ ls -all -h $TARGETDIR/yocto/tmp/deploy/images/$MACHINETYPE/
 
 az storage container create --name $STORAGECONTAINER
 az storage blob upload --container-name $STORAGECONTAINER --name local.conf --file $TARGETDIR/yocto/conf/local.conf
-az storage blob upload --container-name $STORAGECONTAINER --name bblayers.conf --file $TARGETDIR/yocto/yocto/conf/bblayers.conf
+az storage blob upload --container-name $STORAGECONTAINER --name bblayers.conf --file $TARGETDIR/yocto/conf/bblayers.conf
 az storage blob upload --container-name $STORAGECONTAINER --name console-latest.log --file $TARGETDIR/yocto/tmp/log/cooker/$MACHINETYPE/console-latest.log
 az storage blob upload --container-name $STORAGECONTAINER --name $BUILDIMAGE-$MACHINETYPE.hddimg --file $TARGETDIR/yocto/tmp/deploy/images/$MACHINETYPE/$BUILDIMAGE-$MACHINETYPE.hddimg
 az storage blob upload --container-name $STORAGECONTAINER --name $BUILDIMAGE-$MACHINETYPE.wic --file $TARGETDIR/yocto/tmp/deploy/images/$MACHINETYPE/$BUILDIMAGE-$MACHINETYPE.wic
