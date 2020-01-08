@@ -1,24 +1,48 @@
-# setup on Standard D64 v3 (64 vcpus, 256 GiB memory)
-sudo apt update
-sudo apt-get install -y gawk wget git-core diffstat unzip texinfo gcc-multilib build-essential chrpath socat cpio python python3 python3-pip python3-pexpect xz-utils debianutils iputils-ping python3-git python3-jinja2 libegl1-mesa libsdl1.2-dev xterm locales
+# this is the source script for Azure Batch to build a Yocto image
+# more information here:  http://kevinsaye.wordpress.com
+# note, the command to call this is something like: 		/bin/bash -c "wget -O - https://raw.githubusercontent.com/ksaye/IoTDemonstrations/master/batch/run.sh | bash"
 
-USERGROUP=`id -gn`
+# ----------------------
+# user defined settings
+# ----------------------
+
 BUILD=thud
 MACHINETYPE=intel-corei7-64
+TARGETDIR=/mnt/$AZ_BATCH_JOB_ID/$AZ_BATCH_TASK_ID
+BUILDIMAGE=core-image-sato
+# note we have a different storage container for each job, and we have to convert it to lower case
+# for storage to work set the environment vars: AZURE_STORAGE_ACCOUNT & AZURE_STORAGE_KEY
+STORAGECONTAINER=`echo $AZ_BATCH_TASK_ID | tr '[:lower:]' '[:lower:]'`
 
-sudo rm -f -r /mnt/yocto
-sudo mkdir -p /mnt/yocto/source
-sudo chown -R $USER:$USERGROUP /mnt/yocto
+# ----------------------
+# end of user defined settings
+# ----------------------
 
-echo Building $BUILD
+# host setup
+sudo apt update
+sudo apt-get install -y ca-certificates curl apt-transport-https lsb-release gnupg gawk wget git-core diffstat unzip texinfo gcc-multilib build-essential chrpath socat cpio python python3 python3-pip python3-pexpect xz-utils debianutils iputils-ping python3-git python3-jinja2 libegl1-mesa libsdl1.2-dev xterm locales
 
-# script
-cd /mnt/yocto/source
+# installing az-client from https://docs.microsoft.com/en-us/cli/azure/install-azure-cli-apt?view=azure-cli-latest
+curl -sL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc.gpg > /dev/null
+AZ_REPO=$(lsb_release -cs)
+echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ $AZ_REPO main" | sudo tee /etc/apt/sources.list.d/azure-cli.list
+sudo apt-get update
+sudo apt-get install azure-cli
+
+sudo rm -f -r $TARGETDIR
+sudo mkdir -p $TARGETDIR/source
+USERGROUP=`id -gn`
+sudo chown -R $USER:$USERGROUP $TARGETDIR
 sudo locale-gen en_US.UTF-8
 sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
 export LANGUAGE=en_US.UTF-8
+
+# actual work
+echo Building Yocto version: $BUILD
+
+cd $TARGETDIR/source
 
 git clone -b $BUILD http://git.yoctoproject.org/git/poky
 git clone -b $BUILD http://git.yoctoproject.org/git/meta-intel
@@ -37,20 +61,20 @@ cd ..
 
 git clone -b $BUILD git://git.openembedded.org/meta-openembedded
 
-cd /mnt/yocto
+cd $TARGETDIR
 source source/poky/oe-init-build-env yocto
-cd /mnt/yocto
-echo "BBLAYERS += \"/mnt/yocto/source/meta-intel\"" >> yocto/conf/bblayers.conf
-echo "BBLAYERS += \"/mnt/yocto/source/meta-rust\"" >> yocto/conf/bblayers.conf
-echo "BBLAYERS += \"/mnt/yocto/source/meta-virtualization\"" >> yocto/conf/bblayers.conf
-echo "BBLAYERS += \"/mnt/yocto/source/meta-iotedge\"" >> yocto/conf/bblayers.conf
-echo "BBLAYERS += \"/mnt/yocto/source/meta-openembedded/meta-oe\"" >> yocto/conf/bblayers.conf
-echo "BBLAYERS += \"/mnt/yocto/source/meta-openembedded/meta-networking\"" >> yocto/conf/bblayers.conf
-echo "BBLAYERS += \"/mnt/yocto/source/meta-openembedded/meta-python\"" >> yocto/conf/bblayers.conf
-echo "BBLAYERS += \"/mnt/yocto/source/meta-openembedded/meta-perl\"" >> yocto/conf/bblayers.conf
-echo "BBLAYERS += \"/mnt/yocto/source/meta-openembedded/meta-filesystems\"" >> yocto/conf/bblayers.conf
-echo "BBLAYERS += \"/mnt/yocto/source/meta-security/meta-tpm\"" >> yocto/conf/bblayers.conf
-echo "BBLAYERS_NON_REMOVABLE += \"/mnt/yocto/source/poky/meta-iotedge\"" >> yocto/conf/bblayers.conf
+cd $TARGETDIR
+echo "BBLAYERS += \"$TARGETDIR/source/meta-intel\"" >> yocto/conf/bblayers.conf
+echo "BBLAYERS += \"$TARGETDIR/source/meta-rust\"" >> yocto/conf/bblayers.conf
+echo "BBLAYERS += \"$TARGETDIR/source/meta-virtualization\"" >> yocto/conf/bblayers.conf
+echo "BBLAYERS += \"$TARGETDIR/source/meta-iotedge\"" >> yocto/conf/bblayers.conf
+echo "BBLAYERS += \"$TARGETDIR/source/meta-openembedded/meta-oe\"" >> yocto/conf/bblayers.conf
+echo "BBLAYERS += \"$TARGETDIR/source/meta-openembedded/meta-networking\"" >> yocto/conf/bblayers.conf
+echo "BBLAYERS += \"$TARGETDIR/source/meta-openembedded/meta-python\"" >> yocto/conf/bblayers.conf
+echo "BBLAYERS += \"$TARGETDIR/source/meta-openembedded/meta-perl\"" >> yocto/conf/bblayers.conf
+echo "BBLAYERS += \"$TARGETDIR/source/meta-openembedded/meta-filesystems\"" >> yocto/conf/bblayers.conf
+echo "BBLAYERS += \"$TARGETDIR/source/meta-security/meta-tpm\"" >> yocto/conf/bblayers.conf
+echo "BBLAYERS_NON_REMOVABLE += \"$TARGETDIR/source/poky/meta-iotedge\"" >> yocto/conf/bblayers.conf
 
 echo "MACHINE = \"$MACHINETYPE\"" >> yocto/conf/local.conf
 echo 'DISTRO_FEATURES_append += " systemd wifi virtualization"' >> yocto/conf/local.conf
@@ -71,8 +95,13 @@ echo 'VIRTUAL-RUNTIME_initscripts = ""' >> yocto/conf/local.conf
 echo 'PACKAGECONFIG_append_pn-qemu-native = " sdl"' >> yocto/conf/local.conf
 echo 'PACKAGECONFIG_append_pn-nativesdk-qemu = " sdl"' >> yocto/conf/local.conf
 
-bitbake core-image-sato
+bitbake $BUILDIMAGE
 
-ls -all -h /mnt/yocto/yocto/tmp/deploy/images/$MACHINETYPE
+ls -all -h $TARGETDIR/yocto/tmp/deploy/images/$MACHINETYPE/
 
-# how to copy the hdd file and etc
+az storage container create --name $STORAGECONTAINER
+az storage blob upload --container-name $STORAGECONTAINER --name local.conf --file $TARGETDIR/yocto/conf/local.conf
+az storage blob upload --container-name $STORAGECONTAINER --name bblayers.conf --file $TARGETDIR/yocto/yocto/conf/bblayers.conf
+az storage blob upload --container-name $STORAGECONTAINER --name console-latest.log --file $TARGETDIR/yocto/tmp/log/cooker/$MACHINETYPE/console-latest.log
+az storage blob upload --container-name $STORAGECONTAINER --name $BUILDIMAGE-$MACHINETYPE.hddimg --file $TARGETDIR/yocto/tmp/deploy/images/$MACHINETYPE/$BUILDIMAGE-$MACHINETYPE.hddimg
+az storage blob upload --container-name $STORAGECONTAINER --name $BUILDIMAGE-$MACHINETYPE.wic --file $TARGETDIR/yocto/tmp/deploy/images/$MACHINETYPE/$BUILDIMAGE-$MACHINETYPE.wic
