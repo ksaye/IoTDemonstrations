@@ -56,6 +56,7 @@ echo 'EXTRA_IMAGE_FEATURES += "debug-tweaks ssh-server-dropbear tools-debug tool
 echo 'IMAGE_INSTALL_append += " iotedge-daemon "' >> yocto/conf/local.conf
 echo 'IMAGE_INSTALL_append += " iotedge-cli "' >> yocto/conf/local.conf
 echo 'IMAGE_INSTALL_append += " docker "' >> yocto/conf/local.conf
+echo 'IMAGE_INSTALL_append += " docker-contrib "' >> yocto/conf/local.conf
 echo 'IMAGE_INSTALL_append += " tpm2-tools "' >> yocto/conf/local.conf
 echo 'IMAGE_INSTALL_append += " tpm2-tss "' >> yocto/conf/local.conf
 echo 'IMAGE_INSTALL_append += " ca-certificates "' >> yocto/conf/local.conf
@@ -70,6 +71,6 @@ echo 'PACKAGECONFIG_append_pn-nativesdk-qemu = " sdl"' >> yocto/conf/local.conf
 
 bitbake core-image-sato
 
-ls -all -h /mnt/yocto/yocto/tmp/deploy/images/intel-corei7-64
+ls -all -h /mnt/yocto/yocto/tmp/deploy/images/$MACHINETYPE
 
 # how to copy the hdd file and etc
