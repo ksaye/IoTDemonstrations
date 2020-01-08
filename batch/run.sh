@@ -3,7 +3,7 @@ sudo apt update
 sudo apt-get install -y gawk wget git-core diffstat unzip texinfo gcc-multilib build-essential chrpath socat cpio python python3 python3-pip python3-pexpect xz-utils debianutils iputils-ping python3-git python3-jinja2 libegl1-mesa libsdl1.2-dev xterm locales
 
 USERGROUP=`id -gn`
-BUILD=warrior
+BUILD=thud
 MACHINETYPE=intel-corei7-64
 
 sudo rm -f -r /mnt/yocto
@@ -55,7 +55,7 @@ echo 'DISTRO_FEATURES_append += " systemd wifi virtualization"' >> yocto/conf/lo
 echo 'EXTRA_IMAGE_FEATURES += "debug-tweaks ssh-server-dropbear tools-debug tools-sdk"' >> yocto/conf/local.conf
 echo 'IMAGE_INSTALL_append += " iotedge-daemon "' >> yocto/conf/local.conf
 echo 'IMAGE_INSTALL_append += " iotedge-cli "' >> yocto/conf/local.conf
-echo 'IMAGE_INSTALL_append += " docker-ce "' >> yocto/conf/local.conf
+echo 'IMAGE_INSTALL_append += " docker "' >> yocto/conf/local.conf
 echo 'IMAGE_INSTALL_append += " tpm2-tools "' >> yocto/conf/local.conf
 echo 'IMAGE_INSTALL_append += " tpm2-tss "' >> yocto/conf/local.conf
 echo 'IMAGE_INSTALL_append += " ca-certificates "' >> yocto/conf/local.conf
