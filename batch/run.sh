@@ -13,9 +13,10 @@ sudo chown -R $USER:$USERGROUP /mnt/yocto
 cd /mnt/yocto/source
 rm -f -r *
 sudo locale-gen en_US.UTF-8
-LC_ALL=en_US.UTF-8
-LANG=en_US.UTF-8
-LANGUAGE=en_US.UTF-8
+sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8
+export LANGUAGE=en_US.UTF-8
 
 git clone -b $BUILD http://git.yoctoproject.org/git/poky
 git clone -b $BUILD http://git.yoctoproject.org/git/meta-intel
