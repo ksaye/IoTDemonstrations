@@ -6,7 +6,7 @@
 # user defined settings
 # ----------------------
 
-BUILD=thud
+BUILD=warrior
 MACHINETYPE=intel-corei7-64
 TARGETDIR=/mnt/$AZ_BATCH_JOB_ID/$AZ_BATCH_TASK_ID
 BUILDIMAGE=core-image-sato
@@ -83,8 +83,9 @@ echo 'IMAGE_INSTALL_append += " iotedge-daemon "' >> yocto/conf/local.conf
 echo 'IMAGE_INSTALL_append += " iotedge-cli "' >> yocto/conf/local.conf
 echo 'IMAGE_INSTALL_append += " docker "' >> yocto/conf/local.conf
 echo 'IMAGE_INSTALL_append += " docker-contrib "' >> yocto/conf/local.conf
-#echo 'IMAGE_INSTALL_append += " tpm2-tools "' >> yocto/conf/local.conf
-#echo 'IMAGE_INSTALL_append += " tpm2-tss "' >> yocto/conf/local.conf
+echo 'IMAGE_INSTALL_append += " kernel-modules "' >> yocto/conf/local.conf
+echo 'IMAGE_INSTALL_append += " tpm2-tools "' >> yocto/conf/local.conf
+echo 'IMAGE_INSTALL_append += " tpm2-tss "' >> yocto/conf/local.conf
 echo 'IMAGE_INSTALL_append += " ca-certificates "' >> yocto/conf/local.conf
 echo 'IMAGE_INSTALL_append += " iw "' >> yocto/conf/local.conf
 echo 'IMAGE_INSTALL_append += " connman "' >> yocto/conf/local.conf
