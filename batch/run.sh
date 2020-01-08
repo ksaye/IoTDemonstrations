@@ -47,7 +47,6 @@ echo "BBLAYERS += \"/mnt/yocto/source/meta-openembedded/meta-networking\"" >> yo
 echo "BBLAYERS += \"/mnt/yocto/source/meta-openembedded/meta-python\"" >> yocto/conf/bblayers.conf
 echo "BBLAYERS += \"/mnt/yocto/source/meta-openembedded/meta-perl\"" >> yocto/conf/bblayers.conf
 echo "BBLAYERS += \"/mnt/yocto/source/meta-openembedded/meta-filesystems\"" >> yocto/conf/bblayers.conf
-echo "BBLAYERS += \"/mnt/yocto/source/meta-security\"" >> yocto/conf/bblayers.conf
 echo "BBLAYERS += \"/mnt/yocto/source/meta-security/meta-tpm\"" >> yocto/conf/bblayers.conf
 echo "BBLAYERS_NON_REMOVABLE += \"/mnt/yocto/source/poky/meta-iotedge\"" >> yocto/conf/bblayers.conf
 
