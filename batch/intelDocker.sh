@@ -48,6 +48,7 @@ git clone -b $BUILD http://git.yoctoproject.org/git/poky
 git clone -b $BUILD http://git.yoctoproject.org/git/meta-intel
 git clone -b $BUILD git://git.yoctoproject.org/meta-virtualization
 git clone -b $BUILD git://git.openembedded.org/meta-openembedded
+git clone -b master git://github.com/meta-rust/meta-rust.git
 
 cd $TARGETDIR
 source source/poky/oe-init-build-env yocto
