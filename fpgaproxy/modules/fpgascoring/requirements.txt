@@ -1,0 +1,4 @@
+azure-iot-device~=2.0.0
+azureml-accel-models[cpu]
+opencv-python
+coils

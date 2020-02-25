@@ -1,0 +1,36 @@
+# FROM mcr.microsoft.com/windows/servercore:1809-amd64
+# 2.2 GB download, 5 GB on disk
+
+# or
+FROM mcr.microsoft.com/windows:1809-amd64
+# 5.2 GB download, 12 GB on disk
+
+# today this will not work nanoserver:1803-amd64 (140 MB download, 368 MB on disk)
+# today this will not work iotcore:1809 (300 MB download, 768 MB on disk)
+
+# install Python
+RUN curl -o c:\python-3.6.8-amd64.exe https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe
+RUN c:\python-3.6.8-amd64.exe /quiet InstallAllUsers=1 TargetDir=c:\Python PrependPath=1 Shortcuts=0 Include_doc=0 Include_pip=0 Include_test=0
+
+# install an updated version of pip
+RUN curl -o c:\get-pip.py https://bootstrap.pypa.io/get-pip.py
+RUN python.exe c:\get-pip.py --disable-pip-version-check --no-cache-dir
+
+RUN pip install --upgrade setuptools 
+COPY requirements.txt ./
+RUN pip install -r requirements.txt
+
+# for some reason, opencv is not working on Server core, because there are not enough media DLLs
+# socket support for python on windows is not until 3.9: https://github.com/Azure/azure-iot-sdk-python/issues/287
+# so using v1 of the python sdk
+# v1 of the SDK does not work with Python 3.7: https://github.com/Azure/azure-iot-sdk-python/issues/169
+# still getting 
+
+#from .iothub_client import *
+#ImportError: DLL load failed: The specified module could not be found.
+
+# try manually on docker image and change the iothub_client version
+
+COPY . .
+
+ENTRYPOINT [ "python", "-u", "mainv1.py" ]
