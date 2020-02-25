@@ -64,7 +64,7 @@ namespace csharpclient
                 try
                 {
                     // get the file
-                    webClient.DownloadFile("http://home.saye.org:81/cgi-bin/api.cgi?cmd=Snap&channel=0&rs=kevin&user=admin&password=", filename);
+                    webClient.DownloadFile("http://url", filename);
                     // send the file to fpgaproxy
                     byte[] responseArray = webClient.UploadFile("http://fpgaproxy", filename);
                     // get the response json
