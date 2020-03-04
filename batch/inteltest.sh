@@ -53,8 +53,8 @@ git clone -b $BUILD git://git.yoctoproject.org/meta-security
 git clone -b $BUILD git://git.yoctoproject.org/meta-virtualization
 
 # test fix for kernel modifications for intel
-cp meta-virtualization/recipes-kernel/linux/linux-yocto_4.19.bbappend meta-virtualization/recipes-kernel/linux/linux-intel_4.19.bbappend 
-cp meta-virtualization/recipes-kernel/linux/linux-yocto_virtualization.inc meta-virtualization/recipes-kernel/linux/linux-intel_virtualization.inc
+# cp meta-virtualization/recipes-kernel/linux/linux-yocto_4.19.bbappend meta-virtualization/recipes-kernel/linux/linux-intel_4.19.bbappend 
+# cp meta-virtualization/recipes-kernel/linux/linux-yocto_virtualization.inc meta-virtualization/recipes-kernel/linux/linux-intel_virtualization.inc
 
 git clone -b master git://github.com/meta-rust/meta-rust.git
 # note RUST has been updated to version 1.37.x+, which is incompatible
