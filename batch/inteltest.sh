@@ -46,11 +46,11 @@ cd $TARGETDIR/source
 
 git clone -b $BUILD http://git.yoctoproject.org/git/poky
 git clone -b $BUILD http://git.yoctoproject.org/git/meta-intel
-git clone -b $BUILD https://github.com/Azure/meta-iotedge.git
+#git clone -b $BUILD https://github.com/Azure/meta-iotedge.git
 git clone -b $BUILD git://git.yoctoproject.org/meta-security
 
 # adding iotedge stuff
-git clone -b sumo git://git.yoctoproject.org/meta-virtualization
+git clone -b $BUILD git://git.yoctoproject.org/meta-virtualization
 
 # test fix for kernel modifications for intel
 # cp meta-virtualization/recipes-kernel/linux/linux-yocto_4.19.bbappend meta-virtualization/recipes-kernel/linux/linux-intel_4.19.bbappend 
@@ -71,7 +71,7 @@ cd $TARGETDIR
 echo "BBLAYERS += \"$TARGETDIR/source/meta-intel\"" >> yocto/conf/bblayers.conf
 echo "BBLAYERS += \"$TARGETDIR/source/meta-rust\"" >> yocto/conf/bblayers.conf
 echo "BBLAYERS += \"$TARGETDIR/source/meta-virtualization\"" >> yocto/conf/bblayers.conf
-echo "BBLAYERS += \"$TARGETDIR/source/meta-iotedge\"" >> yocto/conf/bblayers.conf
+#echo "BBLAYERS += \"$TARGETDIR/source/meta-iotedge\"" >> yocto/conf/bblayers.conf
 echo "BBLAYERS += \"$TARGETDIR/source/meta-openembedded/meta-oe\"" >> yocto/conf/bblayers.conf
 echo "BBLAYERS += \"$TARGETDIR/source/meta-openembedded/meta-networking\"" >> yocto/conf/bblayers.conf
 echo "BBLAYERS += \"$TARGETDIR/source/meta-openembedded/meta-python\"" >> yocto/conf/bblayers.conf
@@ -83,8 +83,8 @@ echo "BBLAYERS_NON_REMOVABLE += \"$TARGETDIR/source/poky/meta-iotedge\"" >> yoct
 echo "MACHINE = \"$MACHINETYPE\"" >> yocto/conf/local.conf
 echo 'DISTRO_FEATURES_append += " systemd wifi virtualization"' >> yocto/conf/local.conf
 echo 'EXTRA_IMAGE_FEATURES += "debug-tweaks ssh-server-dropbear tools-debug tools-sdk"' >> yocto/conf/local.conf
-echo 'IMAGE_INSTALL_append += " iotedge-daemon "' >> yocto/conf/local.conf
-echo 'IMAGE_INSTALL_append += " iotedge-cli "' >> yocto/conf/local.conf
+#echo 'IMAGE_INSTALL_append += " iotedge-daemon "' >> yocto/conf/local.conf
+#echo 'IMAGE_INSTALL_append += " iotedge-cli "' >> yocto/conf/local.conf
 echo 'IMAGE_INSTALL_append += " docker "' >> yocto/conf/local.conf
 echo 'IMAGE_INSTALL_append += " docker-contrib "' >> yocto/conf/local.conf
 echo 'IMAGE_INSTALL_append += " kernel-modules "' >> yocto/conf/local.conf
