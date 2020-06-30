@@ -47,16 +47,16 @@ cd $TARGETDIR/source
 git clone -b $BUILD http://git.yoctoproject.org/git/poky
 git clone -b $BUILD http://git.yoctoproject.org/git/meta-intel
 #git clone -b $BUILD https://github.com/Azure/meta-iotedge.git
-git clone -b $BUILD git://git.yoctoproject.org/meta-security
+git clone -b $BUILD https://git.yoctoproject.org/meta-security
 
 # adding iotedge stuff
-git clone -b $BUILD git://git.yoctoproject.org/meta-virtualization
+git clone -b $BUILD https://git.yoctoproject.org/meta-virtualization
 
 # test fix for kernel modifications for intel
 # cp meta-virtualization/recipes-kernel/linux/linux-yocto_4.19.bbappend meta-virtualization/recipes-kernel/linux/linux-intel_4.19.bbappend 
 # cp meta-virtualization/recipes-kernel/linux/linux-yocto_virtualization.inc meta-virtualization/recipes-kernel/linux/linux-intel_virtualization.inc
 
-git clone -b master git://github.com/meta-rust/meta-rust.git
+git clone -b $BUILD git://github.com/meta-rust/meta-rust.git
 # note RUST has been updated to version 1.37.x+, which is incompatible
 # reverting to a known good version 
 #cd meta-rust
