@@ -50,7 +50,7 @@ git clone -b $BUILD https://github.com/Azure/meta-iotedge.git
 git clone -b $BUILD git://git.yoctoproject.org/meta-security
 
 # adding iotedge stuff
-git clone -b $BUILD git://git.yoctoproject.org/meta-virtualization
+git clone -b sumo git://git.yoctoproject.org/meta-virtualization
 
 # test fix for kernel modifications for intel
 # cp meta-virtualization/recipes-kernel/linux/linux-yocto_4.19.bbappend meta-virtualization/recipes-kernel/linux/linux-intel_4.19.bbappend 
@@ -63,7 +63,7 @@ git clone -b master git://github.com/meta-rust/meta-rust.git
 #git checkout 9487b089ea4779c2b494b17b9254219226efa539
 #cd ..
 
-git clone -b $BUILD git://git.openembedded.org/meta-openembedded
+git clone -b sumo git://git.openembedded.org/meta-openembedded
 
 cd $TARGETDIR
 source source/poky/oe-init-build-env yocto
