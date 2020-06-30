@@ -59,9 +59,9 @@ git clone -b $BUILD git://git.yoctoproject.org/meta-virtualization
 git clone -b master git://github.com/meta-rust/meta-rust.git
 # note RUST has been updated to version 1.37.x+, which is incompatible
 # reverting to a known good version 
-cd meta-rust
-git checkout 9487b089ea4779c2b494b17b9254219226efa539
-cd ..
+#cd meta-rust
+#git checkout 9487b089ea4779c2b494b17b9254219226efa539
+#cd ..
 
 git clone -b $BUILD git://git.openembedded.org/meta-openembedded
 
