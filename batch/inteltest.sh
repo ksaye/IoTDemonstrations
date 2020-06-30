@@ -47,10 +47,10 @@ cd $TARGETDIR/source
 git clone -b $BUILD http://git.yoctoproject.org/git/poky
 git clone -b $BUILD http://git.yoctoproject.org/git/meta-intel
 #git clone -b $BUILD https://github.com/Azure/meta-iotedge.git
-git clone -b $BUILD https://git.yoctoproject.org/meta-security
+git clone -b $BUILD https://git.yoctoproject.org/git/meta-security
 
 # adding iotedge stuff
-git clone -b $BUILD https://git.yoctoproject.org/meta-virtualization
+git clone -b $BUILD https://git.yoctoproject.org/git/meta-virtualization
 
 # test fix for kernel modifications for intel
 # cp meta-virtualization/recipes-kernel/linux/linux-yocto_4.19.bbappend meta-virtualization/recipes-kernel/linux/linux-intel_4.19.bbappend 
