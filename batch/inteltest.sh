@@ -63,7 +63,7 @@ git clone -b master git://github.com/meta-rust/meta-rust.git
 #git checkout 9487b089ea4779c2b494b17b9254219226efa539
 #cd ..
 
-git clone -b sumo git://git.openembedded.org/meta-openembedded
+git clone -b $BUILD git://git.openembedded.org/meta-openembedded
 
 cd $TARGETDIR
 source source/poky/oe-init-build-env yocto
