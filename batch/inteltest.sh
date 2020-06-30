@@ -6,7 +6,7 @@
 # user defined settings
 # ----------------------
 
-BUILD=warrior
+BUILD=master
 MACHINETYPE=intel-corei7-64
 TARGETDIR=/mnt/$AZ_BATCH_JOB_ID/$AZ_BATCH_TASK_ID
 BUILDIMAGE=core-image-sato
