@@ -1,6 +1,6 @@
 sudo apt install \
     curl gcc make patch tar \
-    libssl-dev
+    libssl-dev -y
 
 mkdir -p ~/src
 cd ~/src
