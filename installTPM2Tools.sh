@@ -11,7 +11,7 @@ sudo apt install \
     libcurl4-openssl-dev libdbus-1-dev libgcrypt-dev \
     libglib2.0-dev libjson-c-dev libsqlite3-dev libssl-dev \
     python3-cryptography python3-pyasn1-modules python3-yaml \
-    uuid-dev libyaml-dev
+    uuid-dev libyaml-dev -y
 
 
 # Create base source directory
