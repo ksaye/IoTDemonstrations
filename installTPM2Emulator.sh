@@ -118,3 +118,32 @@ User=tss
 EOF
 sudo systemctl daemon-reload
 sudo systemctl start ibmswtpm2
+
+sudo mkdir -p /etc/systemd/system/tpm2-abrmd.service.d/
+sudo tee /etc/systemd/system/tpm2-abrmd.service.d/mssim.conf <<-EOF
+[Unit]
+ConditionPathExistsGlob=
+Requires=ibmswtpm2.service
+After=ibmswtpm2.service
+
+[Service]
+ExecStart=
+ExecStart=/usr/local/sbin/tpm2-abrmd --tcti=mssim
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl restart tpm2-abrmd
+
+# Should be active (running)
+sudo systemctl status ibmswtpm2
+
+# Should be active (running), and its log should say
+#
+#     tcti_conf after: "mssim"
+sudo systemctl status tpm2-abrmd
+
+# Should print a large array of bytes,
+# instead of an error like
+#
+#     ERROR: Esys_GetCapability(0xA000A) - tcti:IO failure"
+tpm2_pcrread sha256
