@@ -6,7 +6,7 @@ set -euo pipefail
 # Install build dependencies
 
 sudo apt install \
-    git curl \
+    git \
     autoconf automake doxygen libtool \
     libcurl4-openssl-dev libdbus-1-dev libgcrypt-dev \
     libglib2.0-dev libjson-c-dev libsqlite3-dev libssl-dev \
@@ -145,12 +145,11 @@ wait $(jobs -pr)
 
     cd ~/src/tpm2-pkcs11
 
-    # The `tpm2-pkcs11` library uses a filesystem directory to store
-    # wrapped keys. Ensure this directory is readable and writable by
-    # the user you'll be running `aziot-keyd` as,
-    # not just root.
+    # The `tpm2-pkcs11` library uses a filesystem directory
+    # to store wrapped keys.
     sudo mkdir -p /opt/tpm2-pkcs11
-    sudo chown "$(id -u):$(id -g)" /opt/tpm2-pkcs11
+    # aziotks was created by the aziot-identity-service package.
+    sudo chown aziotks:aziotks /opt/tpm2-pkcs11
     sudo chmod 0700 /opt/tpm2-pkcs11
 
     # --enable-debug=!yes is needed to disable assert() in
@@ -162,5 +161,3 @@ wait $(jobs -pr)
     make "-j$(nproc)"
     sudo make install
 )
-
-export TPM2_PKCS11_STORE='/opt/tpm2-pkcs11'
