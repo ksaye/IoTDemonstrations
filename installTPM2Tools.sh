@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Install build dependencies
 sudo apt install \
-    git curl \
+    git curl python3.8 \
     autoconf automake doxygen libtool \
     libcurl4-openssl-dev libdbus-1-dev libgcrypt-dev \
     libglib2.0-dev libjson-c-dev libsqlite3-dev libssl-dev \
@@ -157,11 +157,9 @@ export TPM2_PKCS11_STORE='/opt/tpm2-pkcs11'
 
 # tpm2_ptool requires Python 3 >= 3.7 and expects `python3`
 
-export PYTHON_INTERPRETER=python3.8
-
-#cd /usr/bin
-#sudo ln -f -s python3.8 python3
-#cd ~
+cd /usr/bin
+sudo ln -f -s python3.8 python3
+cd ~
 
 sudo rm -f "$TPM2_PKCS11_STORE/tpm2_pkcs11.sqlite3"
 (
