@@ -182,7 +182,9 @@ export TPM2_PKCS11_STORE='/opt/tpm2-pkcs11'
 # like how Ubuntu 18.04 has `python3.7`, then set
 # the `PYTHON_INTERPRETER` env var.
 #
-# export PYTHON_INTERPRETER=python3.7
+# 
+
+export PYTHON_INTERPRETER=python3.7
 
 sudo rm -f "$TPM2_PKCS11_STORE/tpm2_pkcs11.sqlite3"
 (
