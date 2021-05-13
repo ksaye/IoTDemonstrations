@@ -6,7 +6,7 @@ set -euo pipefail
 # Install build dependencies
 
 sudo apt install \
-    git \
+    git curl \
     autoconf automake doxygen libtool \
     libcurl4-openssl-dev libdbus-1-dev libgcrypt-dev \
     libglib2.0-dev libjson-c-dev libsqlite3-dev libssl-dev \
