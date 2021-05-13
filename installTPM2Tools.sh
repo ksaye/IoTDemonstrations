@@ -157,7 +157,7 @@ export TPM2_PKCS11_STORE='/opt/tpm2-pkcs11'
 
 # tpm2_ptool requires Python 3 >= 3.7 and expects `python3`
 
-export PYTHON_INTERPRETER=python3.7
+export PYTHON_INTERPRETER=python3.8
 
 #cd /usr/bin
 #sudo ln -f -s python3.8 python3
