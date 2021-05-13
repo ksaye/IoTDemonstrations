@@ -1,32 +1,17 @@
 #!/bin/bash
-
 set -euo pipefail
 
-
 # Install build dependencies
-
 sudo apt install \
-    git curl \
+    git curl python3.8 \
     autoconf automake doxygen libtool \
     libcurl4-openssl-dev libdbus-1-dev libgcrypt-dev \
     libglib2.0-dev libjson-c-dev libsqlite3-dev libssl-dev \
     python3-cryptography python3-pyasn1-modules python3-yaml \
     uuid-dev libyaml-dev -y
 
-
 # Create base source directory
-
 mkdir -p ~/src
-
-
-# Define the version numbers
-#
-# Refs:
-# - https://tpm2-software.github.io/versions/#tpm2-tools
-# - https://github.com/tpm2-software/tpm2-abrmd/releases
-# - https://github.com/tpm2-software/tpm2-pkcs11/releases
-# - https://github.com/tpm2-software/tpm2-tools/releases
-# - https://github.com/tpm2-software/tpm2-tss/releases
 
 declare -A checkouts
 
@@ -50,9 +35,7 @@ if ! [ -d ~/src/autoconf-archive-2019.01.06 ]; then
     (cd ~/src/ && tar xf ~/src/autoconf-archive-2019.01.06.tar.gz)
 fi
 
-
 # Clone and bootstrap the repositories
-
 for d in "${!checkouts[@]}"; do
     (
         set -euo pipefail
@@ -75,9 +58,7 @@ done
 
 wait $(jobs -pr)
 
-
 # Build `tpm2-tss`
-
 (
     set -euo pipefail
 
@@ -169,23 +150,15 @@ PIN='1234'
 # The PKCS#11 SO PIN for the new token
 SO_PIN="so$PIN"
 
-
 sudo tpm2_clear
 
 # This is the directory tpm2-pkcs11 was configured to use.
 export TPM2_PKCS11_STORE='/opt/tpm2-pkcs11'
 
 # tpm2_ptool requires Python 3 >= 3.7 and expects `python3`
-# to be that version by default.
-#
-# If your distro has python3.7 or higher at a different path,
-# like how Ubuntu 18.04 has `python3.7`, then set
-# the `PYTHON_INTERPRETER` env var.
-#
-# 
 
 cd /usr/bin
-sudo ln -f python3.8 python3
+sudo ln -f -s python3.8 python3
 cd ~
 
 sudo rm -f "$TPM2_PKCS11_STORE/tpm2_pkcs11.sqlite3"
