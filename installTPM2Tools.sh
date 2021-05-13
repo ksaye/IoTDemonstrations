@@ -161,3 +161,36 @@ wait $(jobs -pr)
     make "-j$(nproc)"
     sudo make install
 )
+
+# A friendly name for the new token
+TOKEN='Key pairs'
+# The PKCS#11 user PIN for the new token
+PIN='1234'
+# The PKCS#11 SO PIN for the new token
+SO_PIN="so$PIN"
+
+
+sudo tpm2_clear
+
+# This is the directory tpm2-pkcs11 was configured to use.
+export TPM2_PKCS11_STORE='/opt/tpm2-pkcs11'
+
+# tpm2_ptool requires Python 3 >= 3.7 and expects `python3`
+# to be that version by default.
+#
+# If your distro has python3.7 or higher at a different path,
+# like how Ubuntu 18.04 has `python3.7`, then set
+# the `PYTHON_INTERPRETER` env var.
+#
+# export PYTHON_INTERPRETER=python3.7
+
+sudo rm -f "$TPM2_PKCS11_STORE/tpm2_pkcs11.sqlite3"
+(
+    cd ~/src/tpm2-pkcs11/tools &&
+    sudo -u aziotks ./tpm2_ptool init --primary-auth '1234' &&
+    sudo -u aziotks ./tpm2_ptool addtoken \
+        --sopin "$SO_PIN" --userpin "$PIN" \
+        --label "$TOKEN" --pid '1'
+)
+
+echo "PKCS#11 base slot URI is pkcs11:token=${TOKEN}?pin-value=${PIN}"
