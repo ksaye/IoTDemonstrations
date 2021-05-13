@@ -184,7 +184,9 @@ export TPM2_PKCS11_STORE='/opt/tpm2-pkcs11'
 #
 # 
 
-export PYTHON_INTERPRETER=python3.7
+cd /usr/bin
+sudo ln -f python3.8 python3
+cd ~
 
 sudo rm -f "$TPM2_PKCS11_STORE/tpm2_pkcs11.sqlite3"
 (
