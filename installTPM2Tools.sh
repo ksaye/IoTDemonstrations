@@ -161,11 +161,12 @@ export TPM2_PKCS11_STORE='/opt/tpm2-pkcs11'
 pythonversion=$(python3 -V 2>&1 | sed 's/.* \([0-9]\).\([0-9]\).*/\1\2/')
 if [ "$pythonversion" -lt "37" ]; then
     echo "This script requires python 3.7 or greater, installing python 3.8"
-    sudo apt install -y python3-pip python3.8
-    sudo pip3 install cryptography cffi
+    sudo apt install -y python3.8
     cd /usr/bin
     sudo ln -f -s python3.8 python3
     cd ~
+    sudo apt install -y python3-pip
+    sudo pip3 install cryptography cffi
 fi
 
 sudo rm -f "$TPM2_PKCS11_STORE/tpm2_pkcs11.sqlite3"
