@@ -1,14 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
+# based on https://azure.github.io/iot-identity-service/pkcs11/tpm2-pkcs11.html
+
 # Install build dependencies
 sudo apt install \
-    git curl gnutls-bin opensc \
-    autoconf make automake doxygen libtool \
-    libcurl4-openssl-dev libdbus-1-dev libgcrypt-dev \
-    libglib2.0-dev libjson-c-dev libsqlite3-dev libssl-dev \
-    python3-cryptography python3-pyasn1-modules python3-yaml \
-    uuid-dev libyaml-dev -y
+    git curl gnutls-bin opensc autoconf make automake doxygen libtool libcurl4-openssl-dev libdbus-1-dev libgcrypt-dev \
+    libglib2.0-dev libjson-c-dev libsqlite3-dev libssl-dev python3-cryptography python3-pyasn1-modules python3-yaml uuid-dev libyaml-dev -y
 
 # Create base source directory
 mkdir -p ~/src
@@ -20,9 +18,7 @@ checkouts['tpm2-pkcs11']='1.5.0'
 checkouts['tpm2-tools']='5.0'
 checkouts['tpm2-tss']='3.0.3'
 
-
 # Download `autoconf-2019.01.06` and extract it.
-#
 # There is a newer autoconfig-archive, but the tpm2-* autoconf files have
 # hard-coded things for 2019_01_06
 
@@ -75,9 +71,7 @@ wait $(jobs -pr)
     sudo ldconfig
 )
 
-
 # Build `tpm2-abrmd`
-
 (
     set -euo pipefail
 
@@ -105,9 +99,7 @@ wait $(jobs -pr)
         (grep -q 'com.intel.tss2.Tabrmd' || :)
 )
 
-
 # Build `tpm2-tools`
-
 (
     set -euo pipefail
 
@@ -118,9 +110,7 @@ wait $(jobs -pr)
     sudo make install
 )
 
-
 # Build tpm2-pkcs11
-
 (
     set -euo pipefail
 
