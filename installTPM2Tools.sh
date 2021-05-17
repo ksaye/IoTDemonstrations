@@ -144,7 +144,7 @@ wait $(jobs -pr)
 )
 
 # A friendly name for the new token
-TOKEN='Key pairs'
+TOKEN='IoTEdgeCert'
 # The PKCS#11 user PIN for the new token
 PIN='1234'
 # The PKCS#11 SO PIN for the new token
