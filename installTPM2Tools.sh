@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Install build dependencies
 sudo apt install \
-    git curl python3.8 gnutls-bin opensc \
+    git curl gnutls-bin opensc \
     autoconf make automake doxygen libtool \
     libcurl4-openssl-dev libdbus-1-dev libgcrypt-dev \
     libglib2.0-dev libjson-c-dev libsqlite3-dev libssl-dev \
@@ -157,9 +157,16 @@ export TPM2_PKCS11_STORE='/opt/tpm2-pkcs11'
 
 # tpm2_ptool requires Python 3 >= 3.7 and expects `python3`
 
-cd /usr/bin
-sudo ln -f -s python3.8 python3
-cd ~
+# checking the python version and resolving if needed
+pythonversion=$(python3 -V 2>&1 | sed 's/.* \([0-9]\).\([0-9]\).*/\1\2/')
+if [ "$pythonversion" -lt 3.7 ]; then
+    echo "This script requires python 3.7 or greater, installing python 3.8"
+    sudo apt install -y python3-pip python3.8
+    sudo pip3 install cryptography cffi
+    cd /usr/bin
+    sudo ln -f -s python3.8 python3
+    cd ~
+fi
 
 sudo rm -f "$TPM2_PKCS11_STORE/tpm2_pkcs11.sqlite3"
 (
