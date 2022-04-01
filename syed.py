@@ -9,16 +9,15 @@ import signal
 import subprocess
 import sys
 import threading
-import time
+import struct
 from datetime import datetime, timedelta
 
 from azure.iot.device import Message, MethodResponse
 from azure.iot.device.aio import IoTHubModuleClient
-from azure.storage.blob import BlobServiceClient, ContentSettings, BlobSasPermissions, generate_blob_sas # pip install azure-storage-blob
- 
-# Event indicating client stop
+from azure.storage.blob import BlobServiceClient, ContentSettings, BlobSasPermissions, generate_blob_sas 
+
 stop_event = threading.Event()
-videoURL = None
+maxVideoURLs = 15
 videoLenghtSeconds = 15
 azureblobconnectionString = None
 azureblobstoragecontainer = None
@@ -34,7 +33,7 @@ def removePasswordFromRTSP(url):
         return url
 
 def create_client():
-    global videoURL, videoLenghtSeconds, azureblobconnectionString, azureblobstoragecontainer, client, videoLenghtSeconds
+    global videoLenghtSeconds, azureblobconnectionString, azureblobstoragecontainer, client, videoLenghtSeconds
     client = IoTHubModuleClient.create_from_edge_environment()
 
     async def method_request_handler(method_request):
@@ -45,46 +44,67 @@ def create_client():
         await recordanduploadvideo(message)
 
     # Define function for handling received messages
-    async def receive_message_handler(message):       
-        JSONMessage = json.loads(message.data.decode('utf-8').replace('"', '"'))
+    async def receive_message_handler(message):
+        json_msg = json.loads(message.data.decode("utf-8"))
+        value_list = json_msg["Content"][0]["Data"][0]["Values"]
+        reading = struct.unpack("!f", bytes.fromhex("{:04x}{:04x}".format(int(value_list[1]["Value"]), int(value_list[0]["Value"]))))[0]
         
-        # should be something like
-        if JSONMessage["machine"]["temperature"] >= 100:
-            await recordanduploadvideo(JSONMessage)
+        # running on ANY message received
+        if "videoURL1" in globals() and azureblobconnectionString != None and azureblobstoragecontainer != None and reading >=10.0:
+            await recordanduploadvideo(message)
+        elif reading < 10.0:
+            return
         else:
-            print(str(datetime.now()) + " " + str(JSONMessage))
+            print("Error: incorrectly set videoURL and/or azureblobconnectionString and/or azureblobstoragecontainer")
 
     async def recordanduploadvideo(origionalmessage):
-        print(str(datetime.now()) + " recording " + removePasswordFromRTSP(videoURL) + " for " + str(videoLenghtSeconds) + " seconds.")
-        try:
-            startTime       = datetime.now()
-            filename        = str(datetime.now().timestamp()) + ".mp4"
-            
-                                # using ffmpeg to avoid the complexity of openCV.  Also disableing encoding to save CPU
-            runCommand      = str('ffmpeg -i ' + videoURL + ' -to ' + str(videoLenghtSeconds) + ' -c:v copy -c:a copy ' + filename).split()
-            videoProcess    = subprocess.Popen(runCommand, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, encoding="utf-8")
-            while videoProcess.poll() == None:
-                time.sleep(.05)  # still running
 
+        #try:
+        if (True):            
+            runningProcesses = []
             blob_service_client =  BlobServiceClient.from_connection_string(azureblobconnectionString)
-            blob_client = blob_service_client.get_blob_client(container=azureblobstoragecontainer, blob=filename)
+
+            # for each defined videoURL### variable
+            for counter in range(1, maxVideoURLs):
+                if  "videoURL" + str(counter) in globals():
+                    print(str(datetime.now()) + " recording " + removePasswordFromRTSP(globals()["videoURL" + str(counter)]) + " for " + str(videoLenghtSeconds) + " seconds.")
             
-            # with the MIME type set, we can view it in a simple web browser
+                    locals()["startTime" + str(counter)]  = datetime.now()
+                    locals()["filename" + str(counter)]   = "videoURL" + str(counter) + "-" + str(datetime.now().timestamp()) + ".mp4"
+            
+                                            # using ffmpeg to avoid the complexity of openCV.  Also disableing encoding to save CPU
+                    runCommand      = str('ffmpeg -i ' + globals()["videoURL" + str(counter)] + ' -to ' + str(videoLenghtSeconds) + ' -c:v copy -c:a copy ' + locals()["filename" + str(counter)]).split()
+                    runningProcesses.append(subprocess.Popen(runCommand, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, encoding="utf-8"))
+
+            # wait for all the process to complete as they are running in parallel 
+            for process in runningProcesses:
+                process.wait()
+
+            message = {'videoLenghtSeconds': videoLenghtSeconds, 'sourceMessage': origionalmessage}
+            endTime = str(datetime.now())
             my_content_settings = ContentSettings(content_type="video/mp4")
-            blob_client.upload_blob(open(filename, 'rb'), overwrite=True, content_settings=my_content_settings)
-            videoProperties = {'startTime' : str(startTime), 'endTime' : str(datetime.now()), 'videoLenghtSeconds': str(videoLenghtSeconds), 'sourceURL' : removePasswordFromRTSP(videoURL), 'sourceMessage': str(origionalmessage)}
-            blob_client.set_blob_metadata(videoProperties)
-            print(str(datetime.now()) + " uploaded " + blob_client.url)
-            os.remove(filename)
 
-            cloudURL = None
-            if (blob_service_client.get_container_client(container=azureblobstoragecontainer).get_container_access_policy()['public_access'] == None):
-                cloudURL = blob_client.url + "?" + generate_blob_sas(account_name=blob_service_client.account_name, container_name=azureblobstoragecontainer, account_key=blob_service_client.credential.account_key,
-                                                                        blob_name=filename, permission=BlobSasPermissions(read=True), expiry=datetime.utcnow() + timedelta(hours=sasTokenDurationHours))
-            else:
-                cloudURL = blob_client.url
+            # upload each file to the Azure Blob storage sequentially
+            for counter in range(1, maxVideoURLs):
+                if  "videoURL" + str(counter) in globals():
+                    blob_client = blob_service_client.get_blob_client(container=azureblobstoragecontainer, blob=locals()["filename" + str(counter)])
+                    blob_client.upload_blob(open(locals()["filename" + str(counter)], 'rb'), overwrite=True, content_settings=my_content_settings)
+                    videoProperties = {'startTime' : str(locals()["startTime" + str(counter)]), 'endTime' : endTime, 'videoLenghtSeconds': str(videoLenghtSeconds), 'sourceURL' : removePasswordFromRTSP(globals()["videoURL" + str(counter)]), 'sourceMessage': str(origionalmessage)}
+                    blob_client.set_blob_metadata(videoProperties)
+                    print(str(datetime.now()) + " uploaded to " + blob_client.url)
+                    os.remove(locals()["filename" + str(counter)])
 
-            message = {'startTime' : str(startTime), 'endTime' : str(datetime.now()), 'videoLenghtSeconds': videoLenghtSeconds, 'cloudURL': cloudURL, 'sourceURL' : removePasswordFromRTSP(videoURL), 'sourceMessage': origionalmessage}
+                    cloudURL = None
+                    if (blob_service_client.get_container_client(container=azureblobstoragecontainer).get_container_access_policy()['public_access'] == None):
+                        cloudURL = blob_client.url + "?" + generate_blob_sas(account_name=blob_service_client.account_name, container_name=azureblobstoragecontainer, account_key=blob_service_client.credential.account_key,
+                                                                                blob_name=locals()["filename" + str(counter)], permission=BlobSasPermissions(read=True), expiry=datetime.utcnow() + timedelta(hours=sasTokenDurationHours))
+                    else:
+                        cloudURL = blob_client.url
+
+                    message["startTime"] = str(locals()["startTime" + str(counter)])
+                    message["videoURL" + str(counter)] = removePasswordFromRTSP(globals()["videoURL" + str(counter)])
+                    message["cloudURL" + str(counter)] = cloudURL
+
             print(str(datetime.now()) + " sending message " + str(message))
 
             iotMessage = Message(json.dumps(message))
@@ -92,8 +112,8 @@ def create_client():
             iotMessage.content_type = "application/json"
             await client.send_message(iotMessage)
 
-        except:
-            print(str(datetime.now()) +  " Error : " + str(sys.exc_info()[0])) 
+       # except:
+        #    print(str(datetime.now()) +  " Error : " + str(sys.exc_info()[0])) 
 
     try:
         # Set handler on the client
@@ -113,24 +133,43 @@ def create_client():
     return client
 
 async def twin_handler(patch):
-    global videoURL, videoLenghtSeconds, azureblobconnectionString, azureblobstoragecontainer, videoLenghtSeconds   
-    if "videoURL" in patch.keys():
-        videoURL = patch["videoURL"]
-        print(str(datetime.now()) + " videoURL=" + removePasswordFromRTSP(videoURL))
-    
+    global videoLenghtSeconds, azureblobconnectionString, azureblobstoragecontainer, videoLenghtSeconds, maxVideoURLs, sasTokenDurationHours
+    reported_properties = {}
+    reported_properties["sasTokenDurationHours"] = sasTokenDurationHours
+    reported_properties["maxVideoURLs"] = maxVideoURLs
+    reported_properties["videoLenghtSeconds"] = videoLenghtSeconds
+
+    for counter in range(1, maxVideoURLs):
+        if "videoURL" + str(counter) in patch.keys():
+            globals()["videoURL" + str(counter)] = patch["videoURL" + str(counter)]
+            reported_properties["videoURL" + str(counter)] = globals()["videoURL" + str(counter)]
+            print(str(datetime.now()) + " videoURL" + str(counter) + "=" + removePasswordFromRTSP(globals()["videoURL" + str(counter)]))   
+
     if "videoLenghtSeconds" in patch.keys():
         videoLenghtSeconds = patch["videoLenghtSeconds"]
+        reported_properties["videoLenghtSeconds"] = videoLenghtSeconds
         print(str(datetime.now()) + " videoLenghtSeconds=" + str(videoLenghtSeconds))
+
+    if "sasTokenDurationHours" in patch.keys():
+        sasTokenDurationHours = patch["sasTokenDurationHours"]
+        reported_properties["sasTokenDurationHours"] = maxVideoURLs
+        print(str(datetime.now()) + " sasTokenDurationHours=" + str(maxVideoURLs))
+
+    if "maxVideoURLs" in patch.keys():
+        maxVideoURLs = patch["maxVideoURLs"]
+        reported_properties["maxVideoURLs"] = maxVideoURLs
+        print(str(datetime.now()) + " maxVideoURLs=" + str(maxVideoURLs))
 
     if "azureblobconnectionString" in patch.keys():
         azureblobconnectionString = patch["azureblobconnectionString"]
+        reported_properties["azureblobconnectionString"] = azureblobconnectionString
         print(str(datetime.now()) + " azureblobconnectionString=" + azureblobconnectionString)
 
     if "azureblobstoragecontainer" in patch.keys():
         azureblobstoragecontainer = patch["azureblobstoragecontainer"]
+        reported_properties["azureblobstoragecontainer"] = azureblobstoragecontainer
         print(str(datetime.now()) + " azureblobstoragecontainer=" + azureblobstoragecontainer)
 
-    reported_properties = {"videoURL": videoURL, "azureblobconnectionString": azureblobconnectionString, "azureblobstoragecontainer": azureblobstoragecontainer}
     await client.patch_twin_reported_properties(reported_properties)
 
 async def module_run(client):
