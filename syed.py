@@ -59,8 +59,7 @@ def create_client():
 
     async def recordanduploadvideo(origionalmessage):
 
-        #try:
-        if (True):            
+        try:
             runningProcesses = []
             blob_service_client =  BlobServiceClient.from_connection_string(azureblobconnectionString)
 
@@ -112,8 +111,8 @@ def create_client():
             iotMessage.content_type = "application/json"
             await client.send_message(iotMessage)
 
-       # except:
-        #    print(str(datetime.now()) +  " Error : " + str(sys.exc_info()[0])) 
+        except:
+            print(str(datetime.now()) +  " Error : " + str(sys.exc_info()[0])) 
 
     try:
         # Set handler on the client
