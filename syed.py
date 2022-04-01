@@ -80,7 +80,7 @@ def create_client():
             for process in runningProcesses:
                 process.wait()
 
-            endTime = datetime.now()
+            endTime = str(datetime.now())
             message = {'videoLenghtSeconds': videoLenghtSeconds, 'sourceMessage': origionalmessage, 'endTime': str(endTime)}
             my_content_settings = ContentSettings(content_type="video/mp4")
 
