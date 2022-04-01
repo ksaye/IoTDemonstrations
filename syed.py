@@ -80,8 +80,8 @@ def create_client():
             for process in runningProcesses:
                 process.wait()
 
-            message = {'videoLenghtSeconds': videoLenghtSeconds, 'sourceMessage': origionalmessage}
             endTime = str(datetime.now())
+            message = {'videoLenghtSeconds': videoLenghtSeconds, 'sourceMessage': origionalmessage, 'endTime': str(endTime)}
             my_content_settings = ContentSettings(content_type="video/mp4")
 
             # upload each file to the Azure Blob storage sequentially
