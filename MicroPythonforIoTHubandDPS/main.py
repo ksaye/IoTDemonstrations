@@ -1,5 +1,6 @@
 import sys
 import time
+import gc
 
 import machine
 import network
@@ -72,17 +73,18 @@ def publishdata(payload):
 
 ntptime.host = "0.pool.ntp.org"
 ntptime.settime()
+gc.enable()
 
 print(str(humanreadabletime()) + " Booting")
 #### Main code ####
 while True:
-    ntptime.settime()
     if device_id == "":         # if the device_id is not set, using the WLAN MAC address
         device_id = str(hexlify(network.WLAN().config('mac'),':').decode()).replace(":", "")
 
     print(str(humanreadabletime()) + " Main loop")
     try:
-        if dpsScopeId != "" and dpsProvisionKey != "" and device_id != "" and errorCounter >= 1:
+        ntptime.settime()
+        if dpsScopeId != "" and dpsProvisionKey != "" and device_id != "" and errorCounter >= 2:
             iotHubhostname, device_id, device_shared_access_key = dpsprovision(dpsScopeId, dpsProvisionKey, device_id)
 
         uri = '{}/devices/{}'.format(iotHubhostname, device_id)
@@ -134,6 +136,7 @@ while True:
             time.sleep(1)
     
     except Exception as er:
+        gc.collect()
         connected=False
         errorCounter+=1
         print(str(humanreadabletime()) + " Error count " + str(errorCounter) + ", Reconnecting after 15 seconds.  Possible sas token expired, network connection lost or quota exceeded. Error " + str(er))
