@@ -1,6 +1,5 @@
-import sys
+import sys, gc
 import time
-import gc
 
 import machine
 import network
@@ -72,7 +71,6 @@ def publishdata(payload):
     mqttc.publish(d2c_topic, ujson.dumps(payload))      # assuming all data will be json
 
 ntptime.host = "0.pool.ntp.org"
-ntptime.settime()
 gc.enable()
 
 print(str(humanreadabletime()) + " Booting")
