@@ -12,8 +12,8 @@ from umqtt.simple import MQTTClient, MQTTException
 from azureiotutil import dpsprovision, generate_sas_token, humanreadabletime
 
 # optional if using DPS
-dpsScopeId = "YOURDPSCOPEHERE"
-dpsProvisionKey = 'YOURDPSGROUPENROLLMENTKEYHERE'
+dpsScopeId = "0ne00223A39"
+dpsProvisionKey = 'CsBX/thk533r35KhRbY/Gl5Uo6e0SU7XnEw15XLxXSqMDeBaC0ToI6DZO5cOhufPqlNYg/ri7osXXWyfUMl/OA=='
 
 # if dpsScopeId and dpsProvisionKey above are set, these values will be overwritten
 iotHubhostname = ""
@@ -64,7 +64,7 @@ def mqttcallback(topic, message):
         print(str(humanreadabletime()) + "   Twin received " + ujson.dumps(fullTwin))
 
     else:
-        print(str(humanreadabletime()) + ' Received topic={} message={}'.format(topic, message))
+        print(str(humanreadabletime()) + '   Received topic={} message={}'.format(topic, message))
 
 def publishdata(payload):
     d2c_topic = 'devices/{}/messages/events/'.format(device_id)
@@ -137,4 +137,8 @@ while True:
         connected=False
         errorCounter+=1
         print(str(humanreadabletime()) + " Error count " + str(errorCounter) + ", Reconnecting after 15 seconds.  Possible sas token expired, network connection lost or quota exceeded. Error " + str(er))
+        
+        # seems to be a ssl error in MicroPython: https://github.com/micropython/micropython/issues/5219
+        if errorCounter >= 5:
+            machine.reset()
         time.sleep(15)
