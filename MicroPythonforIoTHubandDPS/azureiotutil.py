@@ -9,7 +9,9 @@ import ujson
 from ubinascii import a2b_base64, b2a_base64, hexlify
 #from uhashlib import sha256  # open issue here https://github.com/micropython/micropython-lib/issues/369
 from hashlib._sha256 import sha256
+
 #from urllib.parse import quote_plus, urlencode # this fails on EPS32 :()
+
 
 def quote_plus(content):
     content = str(content).replace("/", "%2F")
@@ -19,7 +21,23 @@ def quote_plus(content):
 
 def humanreadabletime():
     localtime = time.localtime()
-    return '{}-{}-{} {}:{}:{}'.format(localtime[0], localtime[1], localtime[2], localtime[3], localtime[4], localtime[5])
+    month = localtime[1]
+    if month < 10:
+        month = str('0'+ str(month))
+    day = localtime[2]
+    if day < 10:
+        day = str('0'+ str(day))
+    hour = localtime[3]
+    if hour < 10:
+        hour = str('0'+ str(hour))
+    minute = localtime[4]
+    if minute < 10:
+        minute = str('0'+ str(minute))
+    second = localtime[5]
+    if second < 10:
+        second = str('0'+ str(second))
+
+    return '{}-{}-{} {}:{}:{}'.format(localtime[0], month, day, hour, minute, second)
 
 def get_time():
     t = utime.time()
