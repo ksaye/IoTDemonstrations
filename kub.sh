@@ -3,6 +3,7 @@
 sudo swapoff -a && sudo sed -i -e '/swap.img/d' /etc/fstab
 
 sudo sudo modprobe br_netfilter && sudo sysctl -w net.bridge.bridge-nf-call-iptables=1 && sudo sysctl -w net.ipv4.ip_forward=1
+echo net.ipv4.ip_forward=1 | sudo tee -a /etc/sysctl.conf
 
 sudo modprobe overlay
 sudo modprobe br_netfilter
